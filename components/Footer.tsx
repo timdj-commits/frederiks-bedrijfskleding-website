@@ -46,6 +46,8 @@ export function Footer() {
             <li><Link href="/over-ons" className="text-ink-200 hover:text-white">Over ons</Link></li>
             <li><Link href="/offerte" className="text-ink-200 hover:text-white">Advies aanvragen</Link></li>
             <li><Link href="/privacy" className="text-ink-200 hover:text-white">Privacy</Link></li>
+            <li><Link href="/algemene-voorwaarden" className="text-ink-200 hover:text-white">Algemene voorwaarden</Link></li>
+            <li><Link href="/disclaimer" className="text-ink-200 hover:text-white">Disclaimer</Link></li>
           </ul>
         </div>
       </div>

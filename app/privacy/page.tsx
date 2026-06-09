@@ -4,7 +4,7 @@ import { site } from '@/content/site';
 
 export const metadata: Metadata = {
   title: 'Privacyverklaring',
-  description: 'Privacyverklaring van Frederiks Bedrijfskleding: welke gegevens we verwerken en waarom.',
+  description: 'Privacyverklaring van Frederiks Bedrijfskleding: welke gegevens we verwerken, waarom, hoe lang en wat je rechten zijn.',
   alternates: { canonical: '/privacy' },
   robots: { index: false, follow: true },
 };
@@ -15,17 +15,19 @@ export default function PrivacyPage() {
       <PageHero eyebrow="Juridisch" title="Privacyverklaring" />
       <section className="container-x py-16">
         <div className="prose-nl">
-          <p><em>Concept. Laat dit vóór livegang controleren en aanvullen (AVG). Zie project-standards/data/AVG.md.</em></p>
+          <p>Frederiks Bedrijfskleding hecht waarde aan je privacy. We verwerken alleen de gegevens die nodig zijn om je vraag of aanvraag te beantwoorden, en gaan daar zorgvuldig mee om. Laat deze tekst voor livegang nog even controleren door een specialist.</p>
           <h2>Wie zijn wij</h2>
-          <p>{site.name}, {site.address.street}, {site.address.postalCode} {site.address.city}. Contact: {site.email}, {site.phone}.</p>
-          <h2>Welke gegevens verwerken we</h2>
-          <p>Als u het contact- of adviesformulier invult, verwerken we uw naam, bedrijf, e-mailadres, telefoonnummer en uw bericht. We gebruiken deze gegevens uitsluitend om uw aanvraag te beantwoorden en u een passend aanbod te doen.</p>
-          <h2>Bewaartermijn</h2>
-          <p>We bewaren aanvragen niet langer dan nodig voor de afhandeling en eventuele opvolging.</p>
-          <h2>Uw rechten</h2>
-          <p>U heeft het recht op inzage, correctie en verwijdering van uw gegevens. Neem hiervoor contact met ons op via {site.email}.</p>
+          <p>{site.name}, {site.address.street}, {site.address.postalCode} {site.address.city}. Te bereiken via {site.email} en {site.phone}.</p>
+          <h2>Welke gegevens we verwerken</h2>
+          <p>Als je het advies- of contactformulier invult, verwerken we je naam, bedrijfsnaam, e-mailadres, telefoonnummer en je bericht. We gebruiken die gegevens uitsluitend om je aanvraag te beantwoorden en je een passend aanbod te doen.</p>
           <h2>Statistieken</h2>
-          <p>We gebruiken (na toestemming) statistieken om de website te verbeteren. IP-adressen worden daarbij geanonimiseerd.</p>
+          <p>We gebruiken anonieme websitestatistieken (Google Analytics) om de site te verbeteren. Dit gebeurt alleen na jouw toestemming via de cookiemelding, en IP-adressen worden geanonimiseerd. We gebruiken geen advertentiecookies.</p>
+          <h2>Wie je gegevens verder verwerkt</h2>
+          <p>Voor de werking van de site en het formulier schakelen we dienstverleners in: onze hostingpartij (Vercel), onze e-maildienst (Resend) en, na toestemming, Google Analytics. Met deze partijen zijn of worden verwerkersafspraken gemaakt. We verkopen je gegevens niet.</p>
+          <h2>Bewaartermijn</h2>
+          <p>We bewaren aanvragen niet langer dan nodig is voor de afhandeling en een redelijke opvolging daarna.</p>
+          <h2>Je rechten</h2>
+          <p>Je hebt recht op inzage, correctie en verwijdering van je gegevens, en je kunt een gegeven toestemming intrekken. Neem hiervoor contact op via {site.email}. Je kunt ook een klacht indienen bij de Autoriteit Persoonsgegevens.</p>
         </div>
       </section>
     </>

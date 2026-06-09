@@ -94,3 +94,17 @@ export function articleJsonLd(a: { slug: string; title: string; metaDescription:
     mainEntityOfPage: `${site.url}/kennisbank/${a.slug}`,
   };
 }
+
+/** Review-schema voor klantbeoordelingen (sterren in Google). */
+export function reviewsJsonLd(reviews: { author: string; text: string; rating: number }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': reviews.map((r) => ({
+      '@type': 'Review',
+      itemReviewed: { '@type': 'LocalBusiness', name: site.name, '@id': `${site.url}/#bedrijf` },
+      author: { '@type': 'Organization', name: r.author },
+      reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+      reviewBody: r.text,
+    })),
+  };
+}

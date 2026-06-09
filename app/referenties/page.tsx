@@ -4,7 +4,7 @@ import { Reviews } from '@/components/Reviews';
 import { CtaBand } from '@/components/CtaBand';
 import { PageHero } from '@/components/PageHero';
 import { JsonLd } from '@/components/JsonLd';
-import { faqJsonLd } from '@/lib/jsonld';
+import { reviewsJsonLd } from '@/lib/jsonld';
 import { reviews } from '@/content/reviews';
 import { branches } from '@/content/branches';
 import { site } from '@/content/site';
@@ -24,7 +24,7 @@ const stats = [
 export default function ReferentiesPage() {
   return (
     <>
-      <JsonLd data={faqJsonLd(reviews.map((r) => ({ q: `Ervaring van ${r.author}`, a: r.text })))} />
+      <JsonLd data={reviewsJsonLd(reviews)} />
       <PageHero eyebrow="Referenties" title="Bedrijven die ons al vertrouwen"
         intro="Van Overbeek Bouw en Goossens Melgers tot Café-zaal De Jongens en Getra Transport. Lees in hun eigen woorden hoe de samenwerking bevalt." />
 

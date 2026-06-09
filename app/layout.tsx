@@ -7,6 +7,8 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { MobileActionBar } from '@/components/MobileActionBar';
 import { Analytics } from '@/components/Analytics';
+import { WhatsAppButton } from '@/components/WhatsAppButton';
+import { ConsentBanner } from '@/components/ConsentBanner';
 import { JsonLd } from '@/components/JsonLd';
 import { localBusinessJsonLd } from '@/lib/jsonld';
 
@@ -49,7 +51,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main id="main">{children}</main>
         <Footer />
         <MobileActionBar />
+        <WhatsAppButton />
         <Analytics />
+        <ConsentBanner />
       </body>
     </html>
   );

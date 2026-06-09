@@ -8,6 +8,9 @@ import { CtaBand } from '@/components/CtaBand';
 import { JsonLd } from '@/components/JsonLd';
 import { articleJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 
+const MND = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+function fmtDate(d: string) { const t = d.split('-'); return parseInt(t[2],10) + ' ' + MND[parseInt(t[1],10)-1] + ' ' + t[0]; }
+
 export function generateStaticParams() {
   return artikelen.map((a) => ({ slug: a.slug }));
 }
@@ -20,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: a.metaTitle,
     description: a.metaDescription,
     alternates: { canonical: `/kennisbank/${a.slug}` },
-    openGraph: { title: a.metaTitle, description: a.metaDescription, url: `${site.url}/kennisbank/${a.slug}`, type: 'article' },
+    openGraph: { title: a.metaTitle, description: a.metaDescription, url: `${site.url}/kennisbank/${a.slug}`, type: 'article', images: ['/Bedrijfskleding-bedrukken-en-borduren.jpg'] },
   };
 }
 
@@ -50,6 +53,7 @@ export default async function ArtikelPage({ params }: { params: Promise<{ slug: 
           </nav>
           <p className="eyebrow mt-4">{a.category}</p>
           <h1 className="mt-3 max-w-3xl text-3xl font-extrabold text-balance sm:text-4xl">{a.title}</h1>
+          <p className="mt-4 text-sm text-warm">Door {site.owner}, eigenaar van Frederiks Bedrijfskleding · {fmtDate(a.date)}</p>
         </div>
       </section>
 

@@ -8,6 +8,8 @@ import { CtaBand } from '@/components/CtaBand';
 import { Faq } from '@/components/Faq';
 import { KledingadviesWizard } from '@/components/KledingadviesWizard';
 import { site } from '@/content/site';
+import { JsonLd } from '@/components/JsonLd';
+import { faqJsonLd } from '@/lib/jsonld';
 
 const homeFaq = [
   { q: 'Leveren jullie ook aan zzp’ers?', a: 'Ja. Van zzp’er tot bedrijven met meer dan vijftig medewerkers, iedereen is welkom. We denken ook mee bij kleine aantallen.' },
@@ -91,6 +93,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      <JsonLd data={faqJsonLd(homeFaq)} />
       <Faq items={homeFaq} />
       <CtaBand />
     </>
