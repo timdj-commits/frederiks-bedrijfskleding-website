@@ -6,7 +6,7 @@ import { branches, branchesBySlug } from '@/content/branches';
 import { werkwijze } from '@/content/werkwijze';
 import { site } from '@/content/site';
 import { Faq } from '@/components/Faq';
-import { CtaBand } from '@/components/CtaBand';
+import { ContactSectie } from '@/components/ContactSectie';
 import { JsonLd } from '@/components/JsonLd';
 import { serviceJsonLd, faqJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 
@@ -164,7 +164,7 @@ export default async function BranchePage({ params }: { params: Promise<{ slug: 
         </p>
       </section>
 
-      <CtaBand />
+      <ContactSectie defaultBranche={b.navLabel} />
     </>
   );
 }

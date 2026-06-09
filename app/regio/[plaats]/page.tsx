@@ -5,7 +5,7 @@ import { plaatsen, plaatsenBySlug } from '@/content/plaatsen';
 import { branches } from '@/content/branches';
 import { artikelen } from '@/content/kennisbank';
 import { site } from '@/content/site';
-import { CtaBand } from '@/components/CtaBand';
+import { ContactSectie } from '@/components/ContactSectie';
 import { Reviews } from '@/components/Reviews';
 import { PageHero } from '@/components/PageHero';
 import { JsonLd } from '@/components/JsonLd';
@@ -99,7 +99,7 @@ export default async function RegioPage({ params }: { params: Promise<{ plaats: 
         </p>
       </section>
 
-      <CtaBand title={`Klaar voor bedrijfskleding in ${p.name}?`} />
+      <ContactSectie title={`Bedrijfskleding nodig in ?`} />
     </>
   );
 }
