@@ -1,8 +1,8 @@
 'use client';
 import { useRef, useState } from 'react';
-import { kleuren, kledingtypes, logoposities } from '@/content/configurator';
+import { kleuren, kledingtypes, logoposities, broekposities, positiesVoor, teamgroottes } from '@/content/configurator';
 import { branches } from '@/content/branches';
-import { Garment, logoBoxStyle } from '@/components/Garments';
+import { Garment } from '@/components/Garments';
 import { getHerkomst } from '@/lib/herkomst';
 
 type Status = 'idle' | 'sending' | 'ok' | 'error';
@@ -21,13 +21,7 @@ function Preview({ type, kleur, logo, positie, techniek }: { type: string; kleur
   const k = kleuren[kleur];
   return (
     <div className="relative mx-auto aspect-square w-full">
-      <Garment type={type} color={k.hex} light={k.licht} />
-      {logo && (
-        <span style={logoBoxStyle(type, positie)}>
-          <img src={logo} alt="" className="w-full object-contain"
-            style={techniek === 'borduren' ? { filter: 'drop-shadow(0 1px 0 rgba(0,0,0,0.45)) saturate(1.05)' } : undefined} />
-        </span>
-      )}
+      <Garment type={type} color={k.hex} light={k.licht} logo={logo} pos={positie} techniek={techniek} />
     </div>
   );
 }
@@ -41,6 +35,7 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
   const [defPositie, setDefPositie] = useState('borst-links');
   const [draft, setDraft] = useState<{ type: string; kleur: number; positie: string; aantal: string }>({ type: 'polo', kleur: 0, positie: 'borst-links', aantal: '' });
   const [items, setItems] = useState<Item[]>([]);
+  const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [extras, setExtras] = useState<Record<string, { on: boolean; aantal: string }>>({});
   const [contact, setContact] = useState({ name: '', company: '', email: '', phone: '' });
   const [consent, setConsent] = useState(false);
@@ -48,8 +43,9 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const allePosities = [...logoposities, ...broekposities];
   const typeLabel = (id: string) => kledingtypes.find((t) => t.id === id)?.label ?? id;
-  const posLabel = (id: string) => logoposities.find((p) => p.id === id)?.label ?? id;
+  const posLabel = (id: string) => allePosities.find((p) => p.id === id)?.label ?? id;
 
   function onLogo(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -60,8 +56,16 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
     r.onload = () => setLogo(typeof r.result === 'string' ? r.result : null);
     r.readAsDataURL(f);
   }
+  function chooseType(id: string) {
+    setLastAdded(null);
+    setDraft((d) => {
+      const valid = positiesVoor(id).some((p) => p.id === d.positie);
+      return { ...d, type: id, positie: valid ? d.positie : positiesVoor(id)[0].id };
+    });
+  }
   function addItem() {
     setItems((p) => [...p, { id: Date.now(), ...draft }]);
+    setLastAdded(typeLabel(draft.type));
     setDraft((d) => ({ ...d, aantal: '' }));
   }
   function removeItem(id: number) { setItems((p) => p.filter((i) => i.id !== id)); }
@@ -105,6 +109,7 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
   const next = () => setStep((s) => Math.min(totaalStappen - 1, s + 1));
   const back = () => setStep((s) => Math.max(0, s - 1));
   const stapTitels = ['Voor wie', 'Je logo', 'Kleding', 'Aanvragen'];
+  const kant = draft.type === 'werkbroek' ? 'Voorkant' : draft.positie === 'rug' ? 'Achterkant' : 'Voorkant';
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -132,7 +137,10 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
               <button type="button" onClick={() => setBranche('Anders')} className={`${chip} ${branche === 'Anders' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>Anders</button>
             </div>
             <p className="mt-6 text-sm font-semibold text-ink-800">Teamgrootte</p>
-            <input className={`${field} max-w-xs`} value={team} onChange={(e) => setTeam(e.target.value)} placeholder="bijv. 8 medewerkers" />
+            <select className={`${field} max-w-xs`} value={team} onChange={(e) => setTeam(e.target.value)}>
+              <option value="">Kies een teamgrootte</option>
+              {teamgroottes.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
         )}
 
@@ -146,6 +154,7 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
                 {logo && <button type="button" onClick={() => setLogo(null)} className="text-sm text-warm hover:text-ink-800">Verwijderen</button>}
                 <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={onLogo} className="hidden" />
               </div>
+              <p className="mt-2 text-xs text-warm">Tip: een logo met transparante achtergrond (PNG of SVG) staat het mooist op gekleurde kleding.</p>
               <p className="mt-5 text-sm font-semibold text-ink-800">Techniek</p>
               <div className="mt-2 flex flex-wrap gap-2.5">
                 {(['borduren', 'bedrukken'] as const).map((t) => (
@@ -170,14 +179,19 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
               <h3 className="text-xl font-extrabold text-ink-900">Stel je kleding samen</h3>
-              <p className="mt-1 text-sm text-warm">Kies een kledingstuk, kleur en aantal en voeg het toe. Herhaal voor elk type dat je nodig hebt.</p>
-              <div className="mt-4 rounded-xl border border-line bg-mist p-4">
+              <ol className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-warm">
+                <li><span className="text-amber-600">1.</span> Stel een stuk samen</li>
+                <li><span className="text-amber-600">2.</span> Voeg het toe</li>
+                <li><span className="text-amber-600">3.</span> Herhaal of ga verder</li>
+              </ol>
+              <div className="relative mt-4 rounded-xl border border-line bg-mist p-4">
+                <span className="absolute right-3 top-3 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-ink-600 shadow-sm">{kant}</span>
                 <Preview type={draft.type} kleur={draft.kleur} logo={logo} positie={draft.positie} techniek={techniek} />
               </div>
               <p className="mt-5 text-sm font-semibold text-ink-800">Kledingstuk</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {kledingtypes.map((t) => (
-                  <button key={t.id} type="button" onClick={() => setDraft((d) => ({ ...d, type: t.id }))} className={`${chip} ${draft.type === t.id ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{t.label}</button>
+                  <button key={t.id} type="button" onClick={() => chooseType(t.id)} className={`${chip} ${draft.type === t.id ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{t.label}</button>
                 ))}
               </div>
               <p className="mt-4 text-sm font-semibold text-ink-800">Kleur: <span className="text-warm">{kleuren[draft.kleur].name}</span></p>
@@ -190,7 +204,7 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
                 <div>
                   <p className="text-sm font-semibold text-ink-800">Logo-positie</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {logoposities.map((p) => (
+                    {positiesVoor(draft.type).map((p) => (
                       <button key={p.id} type="button" onClick={() => setDraft((d) => ({ ...d, positie: p.id }))} className={`${chip} px-3 py-2 ${draft.positie === p.id ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{p.label}</button>
                     ))}
                   </div>
@@ -200,12 +214,19 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
                   <input type="number" min={0} value={draft.aantal} onChange={(e) => setDraft((d) => ({ ...d, aantal: e.target.value }))} placeholder="bijv. 10" className="mt-2 w-28 rounded-md border border-line px-3 py-2 text-sm" />
                 </div>
               </div>
-              <button type="button" onClick={addItem} className="btn-primary mt-5">Voeg toe aan pakket</button>
+              {lastAdded && (
+                <p className="mt-5 rounded-md bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">{lastAdded} staat in je pakket. Kies hierboven een ander stuk en voeg het toe, of ga verder.</p>
+              )}
+              <button type="button" onClick={addItem} className="btn-primary mt-3 w-full justify-center text-base">+ Voeg toe aan je pakket</button>
             </div>
 
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-600">Jouw pakket</p>
-              {items.length === 0 && <p className="mt-3 text-sm text-warm">Nog geen kledingstukken toegevoegd. Stel links je eerste stuk samen en voeg het toe.</p>}
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-600">Jouw pakket ({items.length})</p>
+              {items.length === 0 && (
+                <div className="mt-3 rounded-lg border border-dashed border-line bg-mist p-4 text-sm text-warm">
+                  Nog leeg. Stel links een kledingstuk samen en klik op <span className="font-semibold text-ink-700">Voeg toe aan je pakket</span>. Je kunt zoveel verschillende stukken toevoegen als je wilt.
+                </div>
+              )}
               <ul className="mt-3 space-y-3">
                 {items.map((i) => (
                   <li key={i.id} className="flex items-center gap-3 rounded-lg border border-line bg-white p-3">

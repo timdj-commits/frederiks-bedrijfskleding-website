@@ -7,43 +7,91 @@ function adjust(hex: string, amt: number): string {
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-/** Geeft de stijl voor het logo-overlay per kledingstuk en positie (in % van de preview). */
-export function logoBoxStyle(type: string, pos: string): React.CSSProperties {
-  if (type === 'werkbroek') {
-    const m: Record<string, React.CSSProperties> = {
-      'borst-links': { left: '30%', top: '40%', width: '15%' },
-      'borst-rechts': { left: '55%', top: '40%', width: '15%' },
-      'rug': { left: '38%', top: '30%', width: '24%' },
-    };
-    return { position: 'absolute', ...m[pos] };
-  }
-  const m: Record<string, React.CSSProperties> = {
-    'borst-links': { left: '37%', top: '33%', width: '15%' },
-    'borst-rechts': { left: '49%', top: '33%', width: '15%' },
-    'rug': { left: '34%', top: '42%', width: '32%' },
-  };
-  return { position: 'absolute', ...m[pos] };
+/** Silhouet (buitenlijn) per kledingstuk, voorkant. */
+const bodyPaths: Record<string, string> = {
+  tshirt: 'M86 42 C100 58 140 58 154 42 L196 58 L222 100 L196 118 L182 98 L182 232 C150 242 90 242 58 232 L58 98 L44 118 L18 100 L44 58 Z',
+  polo: 'M86 44 L110 40 L120 56 L130 40 L154 44 L196 58 L222 100 L196 118 L182 98 L182 232 C150 242 90 242 58 232 L58 98 L44 118 L18 100 L44 58 Z',
+  sweater: 'M86 42 C100 58 140 58 154 42 L196 58 L228 96 L212 214 L180 218 L178 108 L178 232 C150 242 90 242 58 232 L62 108 L60 218 L28 214 L12 96 L44 58 Z',
+  softshell: 'M84 40 L156 40 L196 58 L228 96 L212 214 L180 218 L178 108 L178 234 L62 234 L62 108 L60 218 L28 214 L12 96 L44 58 Z',
+  winterjas: 'M84 40 L156 40 L196 58 L228 96 L212 214 L180 218 L178 108 L178 234 L62 234 L62 108 L60 218 L28 214 L12 96 L44 58 Z',
+  bodywarmer: 'M84 40 L156 40 C176 52 182 74 178 96 L178 234 L62 234 L62 96 C58 74 64 52 84 40 Z',
+  werkbroek: 'M62 40 L178 40 L178 64 L172 236 L130 236 L120 128 L110 236 L68 236 L62 64 Z',
+};
+
+/** Achterkant gebruikt een schoon silhouet zonder kraag-V, knopen of rits. */
+function backSilhouette(type: string): string {
+  if (type === 'polo' || type === 'tshirt') return bodyPaths.tshirt;
+  if (type === 'sweater') return bodyPaths.sweater;
+  if (type === 'softshell' || type === 'winterjas') return bodyPaths.softshell;
+  if (type === 'bodywarmer') return bodyPaths.bodywarmer;
+  return bodyPaths[type] ?? bodyPaths.tshirt;
 }
 
-export function Garment({ type, color, light }: { type: string; color: string; light?: boolean }) {
+/** Welke kant tonen we voor deze logo-positie? */
+export function viewFor(pos: string): 'front' | 'back' {
+  return pos === 'rug' ? 'back' : 'front';
+}
+
+/** Bounding box (in viewBox-eenheden, 0-240 x 0-260) voor het logo per kledingstuk en positie. */
+export function logoBox(type: string, pos: string) {
+  if (type === 'werkbroek') {
+    return pos === 'dijbeen-rechts'
+      ? { x: 132, y: 104, w: 30, h: 24 }
+      : { x: 78, y: 104, w: 30, h: 24 };
+  }
+  if (pos === 'rug') return { x: 74, y: 84, w: 92, h: 78 };
+  if (pos === 'borst-rechts') return { x: 138, y: 86, w: 36, h: 27 };
+  return { x: 66, y: 86, w: 36, h: 27 };
+}
+
+export function Garment({
+  type,
+  color,
+  light,
+  logo,
+  pos = 'borst-links',
+  techniek = 'borduren',
+}: {
+  type: string;
+  color: string;
+  light?: boolean;
+  logo?: string | null;
+  pos?: string;
+  techniek?: string;
+}) {
+  const view = type === 'werkbroek' ? 'front' : viewFor(pos);
   const shade = adjust(color, light ? -22 : -34);
   const hi = adjust(color, light ? 10 : 26);
   const seam = light ? '#cfcdc9' : adjust(color, -55);
   const gid = 'gradient-garment';
   const S = (extra: React.SVGAttributes<SVGElement> = {}): React.SVGAttributes<SVGElement> => ({ stroke: seam, strokeWidth: 1.4, fill: 'none', strokeLinejoin: 'round', strokeLinecap: 'round', ...extra });
 
-  let body: React.ReactNode = null;
+  const mainPath = view === 'front' ? bodyPaths[type] : backSilhouette(type);
 
-  if (type === 'tshirt') {
-    body = (<>
-      <path d="M86 42 C100 58 140 58 154 42 L196 58 L222 100 L196 118 L182 98 L182 232 C150 242 90 242 58 232 L58 98 L44 118 L18 100 L44 58 Z" fill={`url(#${gid})`} stroke={seam} strokeWidth="1.6" strokeLinejoin="round" />
+  let details: React.ReactNode = null;
+
+  if (view === 'back') {
+    const jacket = type === 'softshell' || type === 'winterjas' || type === 'bodywarmer';
+    const collar = jacket ? 'M88 44 C108 56 132 56 152 44' : 'M90 46 C108 58 132 58 150 46';
+    details = (<>
+      <path {...S({ d: collar, strokeWidth: 1.6 })} />
+      <path {...S({ d: 'M58 98 C90 106 150 106 182 98', strokeWidth: 1, opacity: 0.5 })} />
+      <line x1="120" y1="52" x2="120" y2="230" stroke={seam} strokeWidth="1" opacity="0.4" />
+      {type === 'winterjas' && [120, 150, 180, 208].map((y) => (
+        <line key={y} x1="64" y1={y} x2="176" y2={y} stroke={seam} strokeWidth="1" opacity="0.45" />
+      ))}
+      {type === 'bodywarmer' && [120, 150, 180, 208].map((y) => (
+        <line key={y} x1="66" y1={y} x2="174" y2={y} stroke={seam} strokeWidth="1" opacity="0.4" />
+      ))}
+    </>);
+  } else if (type === 'tshirt') {
+    details = (<>
       <path {...S({ d: 'M92 47 C104 61 136 61 148 47' })} />
       <path {...S({ d: 'M196 118 L186 113' })} /><path {...S({ d: 'M44 118 L54 113' })} />
       <path d="M58 98 L58 232 C76 237 76 237 86 238 L86 100 Z" fill={shade} opacity="0.18" />
     </>);
   } else if (type === 'polo') {
-    body = (<>
-      <path d="M86 44 L110 40 L120 56 L130 40 L154 44 L196 58 L222 100 L196 118 L182 98 L182 232 C150 242 90 242 58 232 L58 98 L44 118 L18 100 L44 58 Z" fill={`url(#${gid})`} stroke={seam} strokeWidth="1.6" strokeLinejoin="round" />
+    details = (<>
       <path d="M110 40 L120 56 L96 56 Z" fill={shade} opacity="0.5" stroke={seam} strokeWidth="1.2" />
       <path d="M130 40 L120 56 L144 56 Z" fill={shade} opacity="0.5" stroke={seam} strokeWidth="1.2" />
       <rect x="113" y="56" width="14" height="40" rx="2" fill={hi} opacity="0.35" stroke={seam} strokeWidth="1.2" />
@@ -51,15 +99,13 @@ export function Garment({ type, color, light }: { type: string; color: string; l
       <path {...S({ d: 'M196 118 L186 113' })} /><path {...S({ d: 'M44 118 L54 113' })} />
     </>);
   } else if (type === 'sweater') {
-    body = (<>
-      <path d="M86 42 C100 58 140 58 154 42 L196 58 L228 96 L212 214 L180 218 L178 108 L178 232 C150 242 90 242 58 232 L62 108 L60 218 L28 214 L12 96 L44 58 Z" fill={`url(#${gid})`} stroke={seam} strokeWidth="1.6" strokeLinejoin="round" />
+    details = (<>
       <path {...S({ d: 'M92 47 C104 61 136 61 148 47' })} />
       <path {...S({ d: 'M180 206 L212 202' })} /><path {...S({ d: 'M60 206 L28 202' })} />
       <path {...S({ d: 'M58 224 C90 234 150 234 182 224' })} />
     </>);
   } else if (type === 'softshell' || type === 'winterjas') {
-    body = (<>
-      <path d="M84 40 L156 40 L196 58 L228 96 L212 214 L180 218 L178 108 L178 234 L62 234 L62 108 L60 218 L28 214 L12 96 L44 58 Z" fill={`url(#${gid})`} stroke={seam} strokeWidth="1.6" strokeLinejoin="round" />
+    details = (<>
       <path d="M84 40 L120 50 L156 40 L154 56 L120 64 L86 56 Z" fill={shade} opacity="0.55" stroke={seam} strokeWidth="1.2" />
       <line x1="120" y1="64" x2="120" y2="234" stroke={seam} strokeWidth="2.2" />
       <rect x="116" y="60" width="8" height="10" rx="2" fill={seam} />
@@ -70,8 +116,7 @@ export function Garment({ type, color, light }: { type: string; color: string; l
       <path {...S({ d: 'M180 206 L212 202' })} /><path {...S({ d: 'M60 206 L28 202' })} />
     </>);
   } else if (type === 'bodywarmer') {
-    body = (<>
-      <path d="M84 40 L156 40 C176 52 182 74 178 96 L178 234 L62 234 L62 96 C58 74 64 52 84 40 Z" fill={`url(#${gid})`} stroke={seam} strokeWidth="1.6" strokeLinejoin="round" />
+    details = (<>
       <path d="M84 40 L120 50 L156 40 L154 56 L120 64 L86 56 Z" fill={shade} opacity="0.55" stroke={seam} strokeWidth="1.2" />
       <line x1="120" y1="64" x2="120" y2="234" stroke={seam} strokeWidth="2.2" />
       <rect x="116" y="60" width="8" height="10" rx="2" fill={seam} />
@@ -79,9 +124,8 @@ export function Garment({ type, color, light }: { type: string; color: string; l
         <line key={y} x1="64" y1={y} x2="176" y2={y} stroke={seam} strokeWidth="1" opacity="0.45" />
       ))}
     </>);
-  } else { // werkbroek
-    body = (<>
-      <path d="M62 40 L178 40 L178 64 L172 236 L130 236 L120 128 L110 236 L68 236 L62 64 Z" fill={`url(#${gid})`} stroke={seam} strokeWidth="1.6" strokeLinejoin="round" />
+  } else {
+    details = (<>
       <line x1="62" y1="62" x2="178" y2="62" stroke={seam} strokeWidth="1.6" />
       <rect x="74" y="70" width="20" height="16" rx="2" {...S({})} />
       <rect x="146" y="70" width="20" height="16" rx="2" {...S({})} />
@@ -90,6 +134,8 @@ export function Garment({ type, color, light }: { type: string; color: string; l
       <line x1="120" y1="64" x2="120" y2="128" stroke={seam} strokeWidth="1" opacity="0.5" />
     </>);
   }
+
+  const box = logo ? logoBox(type, pos) : null;
 
   return (
     <svg viewBox="0 0 240 260" className="h-full w-full" role="img" aria-label="Voorbeeld kledingstuk">
@@ -100,7 +146,19 @@ export function Garment({ type, color, light }: { type: string; color: string; l
           <stop offset="100%" stopColor={shade} />
         </linearGradient>
       </defs>
-      {body}
+      <path d={mainPath} fill={`url(#${gid})`} stroke={seam} strokeWidth="1.6" strokeLinejoin="round" />
+      {details}
+      {logo && box && (
+        <image
+          href={logo}
+          x={box.x}
+          y={box.y}
+          width={box.w}
+          height={box.h}
+          preserveAspectRatio="xMidYMid meet"
+          style={techniek === 'borduren' ? { filter: 'drop-shadow(0 0.6px 0.4px rgba(0,0,0,0.45))' } : { filter: 'drop-shadow(0 0.5px 0.3px rgba(0,0,0,0.2))' }}
+        />
+      )}
     </svg>
   );
 }

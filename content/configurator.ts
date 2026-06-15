@@ -34,3 +34,22 @@ export const logoposities = [
   { id: 'borst-rechts', label: 'Borst rechts' },
   { id: 'rug', label: 'Rug (groot)' },
 ] as const;
+
+/** Voor een broek is een ruglogo niet logisch; daar plaats je op de pijp. */
+export const broekposities = [
+  { id: 'dijbeen-links', label: 'Pijp links' },
+  { id: 'dijbeen-rechts', label: 'Pijp rechts' },
+] as const;
+
+export function positiesVoor(type: string): readonly { id: string; label: string }[] {
+  return type === 'werkbroek' ? broekposities : logoposities;
+}
+
+/** Teamgrootte als vaste keuzes: makkelijker invullen, beter uit te lezen, kwalificeert de lead. */
+export const teamgroottes = [
+  'tot 5 medewerkers',
+  '5-10 medewerkers',
+  '10-25 medewerkers',
+  '25-50 medewerkers',
+  'meer dan 50 medewerkers',
+] as const;
