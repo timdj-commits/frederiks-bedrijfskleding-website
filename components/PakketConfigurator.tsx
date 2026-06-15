@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import { kleuren, kledingtypes, pakketitems, logoposities } from '@/content/configurator';
 import { branches } from '@/content/branches';
+import { getHerkomst } from '@/lib/herkomst';
 import { Garment, logoBoxStyle } from '@/components/Garments';
 
 type Status = 'idle' | 'sending' | 'ok' | 'error';
@@ -58,7 +59,7 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
     try {
       const res = await fetch('/api/lead', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...contact, branche, aantal: team, bericht, consent: true }),
+        body: JSON.stringify({ ...contact, branche, aantal: team, bericht, bron: getHerkomst(), consent: true }),
       });
       if (!res.ok) { const j = await res.json().catch(() => null); throw new Error(j?.error ?? 'Er ging iets mis.'); }
       (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.('event', 'generate_lead', { event_label: 'pakket-configurator' });

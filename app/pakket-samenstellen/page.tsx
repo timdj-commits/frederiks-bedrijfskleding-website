@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { PageHero } from '@/components/PageHero';
 import { PakketConfigurator } from '@/components/PakketConfigurator';
+import { TrustStrip } from '@/components/TrustStrip';
 
 export const metadata: Metadata = {
   title: 'Stel je werkkleding samen',
@@ -14,6 +15,7 @@ export default async function PakketPage({ searchParams }: { searchParams: Promi
     <>
       <PageHero eyebrow="Stel je pakket samen" title="Ontwerp je werkkleding en zie je logo erop"
         intro="Kies een kledingstuk, een kleur en upload je logo om te zien hoe het eruitziet. Stel het pakket voor je team samen en vraag het vrijblijvend als offerte aan. Wij denken mee en komen langs om te passen." />
+      <TrustStrip />
       <section className="container-x py-12 sm:py-16">
         <PakketConfigurator defaultBranche={branche ?? ''} />
       </section>

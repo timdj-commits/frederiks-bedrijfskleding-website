@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Hero } from '@/components/Hero';
 import { BrandStrip } from '@/components/BrandStrip';
+import { TrustStrip } from '@/components/TrustStrip';
 import { BrancheGrid } from '@/components/BrancheGrid';
 import { Reviews } from '@/components/Reviews';
 import { CtaBand } from '@/components/CtaBand';
@@ -28,6 +29,7 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      <TrustStrip />
       <BrandStrip />
 
       <section className="container-x py-16 sm:py-24">

@@ -268,6 +268,158 @@ export const plaatsen: Plaats[] = [
     ],
     afstand: 'Ongeveer 35 minuten vanaf Hengelo',
   },
+  {
+    slug: 'steenderen',
+    name: 'Steenderen',
+    metaTitle: 'Bedrijfskleding Steenderen',
+    metaDescription:
+      'Werkkleding en bedrijfskleding in Steenderen met persoonlijk advies. Maatwerk, passen op locatie en bedrukken in eigen huis.',
+    intro: 'Steenderen ligt vlak bij ons in de gemeente Bronckhorst. Voor de agrarische en bouwbedrijven hier zijn we snel ter plaatse.',
+    body: [
+      'Steenderen heeft een agrarisch karakter met daarnaast bouw en loonwerk. We leveren weerbestendige, stevige kleding die tegen modder en machines kan, met de juiste schoenen of laarzen erbij.',
+      'Doordat we dichtbij zitten, zijn de lijnen kort: passen op locatie, het logo in eigen huis, en een snelle nalevering als er iemand bij komt. We werken ook in Bronkhorst en Baak.',
+    ],
+    gebieden: ['Centrum', 'Bronkhorst', 'Baak', 'Buitengebied'],
+    populair: ['agri-en-milieu', 'bouw-en-infra', 'industrie-en-transport'],
+    faq: [
+      { q: 'Komen jullie naar Steenderen toe?', a: 'Ja, Steenderen ligt dichtbij onze showroom. We komen langs om te passen en leveren kleding op maat.' },
+      { q: 'Hebben jullie kleding voor agrarisch werk?', a: 'Zeker. Overalls, tuinbroeken en weerbestendige jassen die tegen het werk op het land kunnen, plus stevige laarzen en schoenen.' },
+    ],
+    afstand: 'Ongeveer 10 minuten vanaf Hengelo',
+  },
+  {
+    slug: 'hummelo',
+    name: 'Hummelo',
+    metaTitle: 'Bedrijfskleding Hummelo',
+    metaDescription:
+      'Bedrijfskleding en werkkleding in Hummelo met persoonlijk advies. Passen op locatie en logo bedrukken of borduren.',
+    intro: 'Hummelo en Drempt bedienen we met dezelfde persoonlijke aanpak: langskomen, passen en een pakket samenstellen dat klopt.',
+    body: [
+      'In Hummelo en het naastgelegen Drempt zitten bouw-, hovenier- en horecabedrijven. Voor elk daarvan stellen we een passende lijn samen, van stevige werkkleding tot een verzorgde horeca-outfit.',
+      'We komen langs om te passen, brengen het logo in eigen huis aan en leggen je kledinglijn vast voor een snelle nalevering. Ook in Drempt en Hoog-Keppel zijn we actief.',
+    ],
+    gebieden: ['Centrum', 'Drempt', 'Hoog-Keppel', 'Laag-Keppel'],
+    populair: ['bouw-en-infra', 'agri-en-milieu', 'horeca-en-hospitality'],
+    faq: [
+      { q: 'Verzorgen jullie ook horecakleding in Hummelo?', a: 'Ja, voor restaurants en hotels leveren we koksbuizen, schorten en bediening, met je logo geborduurd.' },
+      { q: 'Hoe snel zijn jullie ter plaatse?', a: 'Hummelo ligt dichtbij. We zijn snel langs om te passen en kunnen vlot leveren.' },
+    ],
+    afstand: 'Ongeveer 15 minuten vanaf Hengelo',
+  },
+  {
+    slug: 'lochem',
+    name: 'Lochem',
+    metaTitle: 'Bedrijfskleding Lochem',
+    metaDescription:
+      'Werkkleding en bedrijfskleding in Lochem met persoonlijk advies. Maatwerk, bedrukken en borduren door Frederiks Bedrijfskleding.',
+    intro: 'Voor bedrijven in Lochem en omgeving leveren we werkkleding met persoonlijke aandacht en snelle nalevering.',
+    body: [
+      'Lochem heeft een stevige maakindustrie en logistiek op de bedrijventerreinen rond de stad, plus bouw en agrarisch werk in de omgeving. We kiezen functionele, slijtvaste kleding en de juiste veiligheidsschoenen voor het werk.',
+      'Passen doen we bij je op de zaak. Het logo brengen we slijtvast aan, bedrukt of geborduurd, en je lijn leggen we vast. We werken ook in Barchem, Gorssel en Almen.',
+    ],
+    gebieden: ['Bedrijventerrein Aalsvoort', 'Centrum', 'Barchem', 'Gorssel', 'Almen'],
+    populair: ['industrie-en-transport', 'bouw-en-infra', 'representatief'],
+    faq: [
+      { q: 'Leveren jullie ook in de kernen rond Lochem?', a: 'Ja, naast Lochem werken we ook in Barchem, Gorssel en Almen. We komen langs om te passen.' },
+      { q: 'Kunnen jullie veiligheidsschoenen leveren?', a: 'Zeker, van S1 tot S3 met persoonlijk pasadvies, afgestemd op het werk.' },
+    ],
+    afstand: 'Ongeveer 25 minuten vanaf Hengelo',
+  },
+  {
+    slug: 'eibergen',
+    name: 'Eibergen',
+    metaTitle: 'Bedrijfskleding Eibergen',
+    metaDescription:
+      'Bedrijfskleding en werkkleding in Eibergen. Persoonlijk advies, passen op locatie en eigen bedrukkerij.',
+    intro: 'Eibergen in de gemeente Berkelland bedienen we met dezelfde persoonlijke aanpak en korte lijnen.',
+    body: [
+      'Eibergen heeft een sterke industriële en agrarische basis. Voor die bedrijven leveren we stevige werkkleding, hi-vis waar nodig en veiligheidsschoenen in de juiste klasse.',
+      'We komen langs om te passen, brengen het logo in eigen huis aan en zorgen voor een snelle nalevering. Ook in Rekken en Beltrum zijn we actief.',
+    ],
+    gebieden: ['Bedrijventerrein De Mors', 'Centrum', 'Rekken'],
+    populair: ['industrie-en-transport', 'agri-en-milieu', 'bouw-en-infra'],
+    faq: [
+      { q: 'Werken jullie ook voor de industrie in Eibergen?', a: 'Ja. Voor de maakindustrie leveren we functionele, slijtvaste werkkleding en de juiste veiligheidsschoenen.' },
+      { q: 'Komen jullie naar Eibergen toe?', a: 'Ja, we komen langs om te passen en houden de lijnen kort, ook al ligt het wat verder.' },
+    ],
+    afstand: 'Ongeveer 25 minuten vanaf Hengelo',
+  },
+  {
+    slug: 'neede',
+    name: 'Neede',
+    metaTitle: 'Bedrijfskleding Neede',
+    metaDescription:
+      'Werkkleding en bedrijfskleding in Neede met persoonlijk advies. Maatwerk, bedrukken en borduren in eigen huis.',
+    intro: 'Voor bedrijven in Neede en omgeving leveren we werkkleding, veiligheidsschoenen en maatwerk met persoonlijke aandacht.',
+    body: [
+      'Neede heeft een textielverleden en vandaag een mix van maakindustrie, bouw en agrarisch werk. We kiezen kleding die past bij het werk en lang meegaat.',
+      'Het logo brengen we in eigen huis aan en je kledinglijn leggen we vast voor een snelle nalevering. We werken ook in Borculo, Ruurlo en de omliggende kernen.',
+    ],
+    gebieden: ['Centrum', 'Bedrijventerrein', 'Rietmolen', 'Noordijk'],
+    populair: ['industrie-en-transport', 'bouw-en-infra', 'agri-en-milieu'],
+    faq: [
+      { q: 'Hebben jullie ook grote maten?', a: 'Zeker, we hebben een ruim maatbereik en bestellen indien nodig een pasmaat.' },
+      { q: 'Verzorgen jullie de bedrukking zelf?', a: 'Ja, bedrukken en borduren doen we in eigen huis, dus snel en met grip op de kwaliteit.' },
+    ],
+    afstand: 'Ongeveer 25 minuten vanaf Hengelo',
+  },
+  {
+    slug: 'varsseveld',
+    name: 'Varsseveld',
+    metaTitle: 'Bedrijfskleding Varsseveld',
+    metaDescription:
+      'Bedrijfskleding en werkkleding in Varsseveld met persoonlijk advies. Passen op locatie en logo in eigen huis.',
+    intro: 'Varsseveld in de Oude IJsselstreek bedienen we met persoonlijk advies en snelle nalevering.',
+    body: [
+      'Varsseveld kent veel maakindustrie en logistiek op de bedrijventerreinen langs de A18, plus bouw en agrarisch werk. We leveren functionele, slijtvaste kleding en hi-vis in de juiste klasse.',
+      'Passen doen we bij je op de zaak, het logo brengen we in eigen huis aan. We werken ook in Westendorp en Heelweg.',
+    ],
+    gebieden: ['Bedrijventerrein langs de A18', 'Centrum', 'Westendorp', 'Heelweg'],
+    populair: ['industrie-en-transport', 'bouw-en-infra', 'agri-en-milieu'],
+    faq: [
+      { q: 'Leveren jullie hi-vis voor werk langs de A18?', a: 'Ja, we leveren zichtbaarheidskleding volgens EN ISO 20471 in de juiste klasse voor werk langs de weg.' },
+      { q: 'Komen jullie naar Varsseveld toe?', a: 'Ja, we komen langs om te passen en zorgen voor een snelle levering.' },
+    ],
+    afstand: 'Ongeveer 25 minuten vanaf Hengelo',
+  },
+  {
+    slug: 'terborg',
+    name: 'Terborg',
+    metaTitle: 'Bedrijfskleding Terborg',
+    metaDescription:
+      'Werkkleding en bedrijfskleding in Terborg met persoonlijk advies. Maatwerk, bedrukken en borduren door Frederiks Bedrijfskleding.',
+    intro: 'Terborg en omgeving in de Oude IJsselstreek bedienen we met dezelfde persoonlijke aanpak.',
+    body: [
+      'Terborg heeft een historische kern en daarbuiten bouw-, technische en industriële bedrijven. Voor die bedrijven leveren we stevige werkkleding, veiligheidsschoenen en bedrukking.',
+      'We komen langs om te passen en leggen je kledinglijn vast voor een snelle nalevering. Ook in Silvolde en Ulft zijn we actief.',
+    ],
+    gebieden: ['Centrum', 'Silvolde', 'Varsselder'],
+    populair: ['bouw-en-infra', 'industrie-en-transport', 'representatief'],
+    faq: [
+      { q: 'Werken jullie ook in Silvolde en Ulft?', a: 'Ja, vanuit Terborg bedienen we de hele Oude IJsselstreek, waaronder Silvolde en Ulft.' },
+      { q: 'Kunnen jullie een vaste kledinglijn opzetten?', a: 'Zeker. We leggen per functie vast wat iemand draagt, zodat nabestellen snel gaat.' },
+    ],
+    afstand: 'Ongeveer 30 minuten vanaf Hengelo',
+  },
+  {
+    slug: 'ulft',
+    name: 'Ulft',
+    metaTitle: 'Bedrijfskleding Ulft',
+    metaDescription:
+      'Bedrijfskleding en werkkleding in Ulft met persoonlijk advies. Passen op locatie en eigen bedrukkerij.',
+    intro: 'Ulft in de Oude IJsselstreek heeft een sterke industriële traditie. Voor die bedrijven leveren we functionele werkkleding met persoonlijke aandacht.',
+    body: [
+      'Ulft staat bekend om zijn ijzer- en maakindustrie, met het DRU-erfgoed als symbool. Op de bedrijventerreinen zit veel industrie en techniek die om stevige, veilige kleding vraagt.',
+      'We leveren werkkleding, hi-vis en veiligheidsschoenen in de juiste normklasse, brengen het logo in eigen huis aan en komen langs om te passen. Ook in Gendringen en Etten zijn we actief.',
+    ],
+    gebieden: ['Bedrijventerrein De Rieze', 'Centrum', 'Gendringen', 'Etten'],
+    populair: ['industrie-en-transport', 'bouw-en-infra', 'representatief'],
+    faq: [
+      { q: 'Werken jullie voor de industrie in Ulft?', a: 'Ja. Voor de maakindustrie en techniek leveren we functionele, slijtvaste werkkleding en de juiste veiligheidsschoenen.' },
+      { q: 'Komen jullie helemaal naar Ulft?', a: 'Ja, we komen langs om te passen en houden de lijnen kort, ook in de zuidelijke Achterhoek.' },
+    ],
+    afstand: 'Ongeveer 30 minuten vanaf Hengelo',
+  },
 ];
 
 export const plaatsenBySlug = Object.fromEntries(plaatsen.map((p) => [p.slug, p]));

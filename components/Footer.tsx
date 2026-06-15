@@ -31,9 +31,10 @@ export function Footer() {
         <div>
           <h3 className="text-sm font-semibold text-white">Regio</h3>
           <ul className="mt-4 space-y-2 text-sm">
-            {plaatsen.map((p) => (
+            {plaatsen.slice(0, 7).map((p) => (
               <li key={p.slug}><Link href={`/regio/${p.slug}`} className="text-ink-200 hover:text-white">{p.name}</Link></li>
             ))}
+            <li><Link href="/regio" className="font-semibold text-amber-400 hover:text-amber-300">Alle regio&rsquo;s</Link></li>
           </ul>
         </div>
         <div>
@@ -42,7 +43,7 @@ export function Footer() {
             <li><Link href="/pakket-samenstellen" className="text-ink-200 hover:text-white">Pakket samenstellen</Link></li>
             <li><Link href="/werkkleding" className="text-ink-200 hover:text-white">Werkkleding</Link></li>
             <li><Link href="/werkschoenen" className="text-ink-200 hover:text-white">Werkschoenen</Link></li>
-            <li><Link href="/bedrukken-borduren" className="text-ink-200 hover:text-white">Bedrukken & borduren</Link></li>
+            <li><Link href="/bedrukken-borduren" className="text-ink-200 hover:text-white">Bedrukken en borduren</Link></li>
             <li><Link href="/kennisbank" className="text-ink-200 hover:text-white">Kennisbank</Link></li>
             <li><Link href="/over-ons" className="text-ink-200 hover:text-white">Over ons</Link></li>
             <li><Link href="/offerte" className="text-ink-200 hover:text-white">Advies aanvragen</Link></li>
@@ -54,7 +55,7 @@ export function Footer() {
       </div>
       <div className="border-t border-ink-800">
         <div className="container-x flex flex-col items-center justify-between gap-2 py-6 text-xs text-ink-300 sm:flex-row">
-          <p>© {new Date().getFullYear()} {site.name}. Alle rechten voorbehouden</p>
+          <p>&copy; {new Date().getFullYear()} {site.name}. Alle rechten voorbehouden</p>
           <p>Bedrijfskleding in de Achterhoek</p>
         </div>
       </div>

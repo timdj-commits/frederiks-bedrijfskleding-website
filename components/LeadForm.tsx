@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { branches } from '@/content/branches';
+import { getHerkomst } from '@/lib/herkomst';
 
 type Status = 'idle' | 'sending' | 'ok' | 'error';
 
@@ -18,7 +19,9 @@ export function LeadForm({ defaultBranche = '' }: { defaultBranche?: string }) {
     setStatus('sending');
     setError('');
     const fd = new FormData(e.currentTarget);
-    const payload = Object.fromEntries(fd.entries());
+    const payload = Object.fromEntries(fd.entries()) as Record<string, string>;
+    payload.bron = [payload.herkomst_self, getHerkomst()].filter(Boolean).join(' | ');
+    delete payload.herkomst_self;
     try {
       const res = await fetch('/api/lead', {
         method: 'POST',
@@ -89,6 +92,18 @@ export function LeadForm({ defaultBranche = '' }: { defaultBranche?: string }) {
             <option>1 (zzp)</option><option>2 tot 10</option><option>11 tot 25</option><option>26 tot 50</option><option>50+</option>
           </select>
         </div>
+      </div>
+      <div>
+        <label className={label} htmlFor="herkomst_self">Hoe heb je ons gevonden?</label>
+        <select id="herkomst_self" name="herkomst_self" className={field}>
+          <option value="">Kies...</option>
+          <option>Via Google</option>
+          <option>Doorverwezen door iemand</option>
+          <option>Social media</option>
+          <option>Advertentie</option>
+          <option>Ik ken Frederiks al</option>
+          <option>Anders</option>
+        </select>
       </div>
       <div>
         <label className={label} htmlFor="bericht">Waar kunnen we mee helpen?</label>

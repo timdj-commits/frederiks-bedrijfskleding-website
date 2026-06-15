@@ -15,6 +15,7 @@ const schema = z.object({
   branche: z.string().max(80).optional().or(z.literal('')),
   aantal: z.string().max(40).optional().or(z.literal('')),
   bericht: z.string().max(2000).optional().or(z.literal('')),
+  bron: z.string().max(400).optional().or(z.literal('')),
   consent: z.union([z.literal('on'), z.boolean()]).optional(),
   website: z.string().max(200).optional(), // honeypot
 });
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
       <p><strong>Telefoon:</strong> ${escapeHtml(d.phone ?? '')}</p>
       <p><strong>Branche:</strong> ${escapeHtml(d.branche ?? '')}</p>
       <p><strong>Aantal medewerkers:</strong> ${escapeHtml(d.aantal ?? '')}</p>
+      <p><strong>Herkomst:</strong> ${escapeHtml(d.bron ?? '')}</p>
       <p><strong>Bericht:</strong><br>${escapeHtml(d.bericht ?? '').replace(/\n/g, '<br>')}</p>
     `,
   }).catch(() => ({ sent: false }));

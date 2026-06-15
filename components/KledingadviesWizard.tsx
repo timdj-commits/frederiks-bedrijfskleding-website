@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { branches } from '@/content/branches';
+import { getHerkomst } from '@/lib/herkomst';
 
 type Status = 'idle' | 'sending' | 'ok' | 'error';
 
@@ -44,7 +45,7 @@ export function KledingadviesWizard({ defaultBranche = '' }: { defaultBranche?: 
     try {
       const res = await fetch('/api/lead', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...contact, branche, aantal, bericht, consent: true }),
+        body: JSON.stringify({ ...contact, branche, aantal, bericht, bron: getHerkomst(), consent: true }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => null);
