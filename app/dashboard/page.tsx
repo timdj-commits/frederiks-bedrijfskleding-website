@@ -24,8 +24,9 @@ function fmt(d: string) {
   }
 }
 
-export default async function DashboardPage() {
-  const authed = Boolean(env.dashboardPassword) && (await cookies()).get(DASH_COOKIE)?.value === env.dashboardPassword;
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ fout?: string }> }) {
+  const sp = await searchParams;
+  const authed = Boolean(env.dashboardPassword) && (await cookies()).get(DASH_COOKIE)?.value === env.dashboardPassword.trim();
 
   if (!authed) {
     return (
@@ -35,6 +36,9 @@ export default async function DashboardPage() {
           <p className="mt-2 text-sm text-warm">Log in om de aanvragen te bekijken.</p>
           {!env.dashboardPassword && (
             <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">Nog niet ingesteld. Zet <code>DASHBOARD_PASSWORD</code> in de omgevingsvariabelen.</p>
+          )}
+          {sp?.fout && (
+            <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">Wachtwoord onjuist. Probeer het opnieuw.</p>
           )}
           <form action={login} className="mt-5">
             <input type="password" name="password" placeholder="Wachtwoord" autoComplete="current-password"
