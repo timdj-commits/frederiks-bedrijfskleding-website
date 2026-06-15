@@ -10,6 +10,7 @@ const primaryNav = [
   { href: '/werkkleding', label: 'Werkkleding' },
   { href: '/werkschoenen', label: 'Werkschoenen' },
   { href: '/bedrukken-borduren', label: 'Bedrukken' },
+  { href: '/pakket-samenstellen', label: 'Samenstellen' },
   { href: '/kennisbank', label: 'Kennisbank' },
   { href: '/referenties', label: 'Referenties' },
 ];

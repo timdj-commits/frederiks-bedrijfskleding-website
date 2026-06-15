@@ -39,6 +39,7 @@ export function Footer() {
         <div>
           <h3 className="text-sm font-semibold text-white">Snel naar</h3>
           <ul className="mt-4 space-y-2 text-sm">
+            <li><Link href="/pakket-samenstellen" className="text-ink-200 hover:text-white">Pakket samenstellen</Link></li>
             <li><Link href="/werkkleding" className="text-ink-200 hover:text-white">Werkkleding</Link></li>
             <li><Link href="/werkschoenen" className="text-ink-200 hover:text-white">Werkschoenen</Link></li>
             <li><Link href="/bedrukken-borduren" className="text-ink-200 hover:text-white">Bedrukken & borduren</Link></li>
