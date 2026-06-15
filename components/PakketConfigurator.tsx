@@ -1,60 +1,86 @@
 'use client';
 import { useRef, useState } from 'react';
-import { kleuren, kledingtypes, pakketitems, logoposities } from '@/content/configurator';
+import { kleuren, kledingtypes, logoposities } from '@/content/configurator';
 import { branches } from '@/content/branches';
-import { getHerkomst } from '@/lib/herkomst';
 import { Garment, logoBoxStyle } from '@/components/Garments';
+import { getHerkomst } from '@/lib/herkomst';
 
 type Status = 'idle' | 'sending' | 'ok' | 'error';
-type ItemState = { on: boolean; aantal: number };
+type Item = { id: number; type: string; kleur: number; positie: string; aantal: string };
+
+const extrasOpties = [
+  { id: 'schoenen', label: 'Veiligheidsschoenen' },
+  { id: 'accessoires', label: 'Accessoires (muts, handschoenen)' },
+];
+const totaalStappen = 4;
+const chip = 'cursor-pointer rounded-md border-2 px-4 py-2.5 text-sm font-semibold transition select-none';
+const swatch = 'h-9 w-9 rounded-full border-2 transition';
+const field = 'mt-1 w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink-900 shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
+
+function Preview({ type, kleur, logo, positie, techniek }: { type: string; kleur: number; logo: string | null; positie: string; techniek: string }) {
+  const k = kleuren[kleur];
+  return (
+    <div className="relative mx-auto aspect-square w-full">
+      <Garment type={type} color={k.hex} light={k.licht} />
+      {logo && (
+        <span style={logoBoxStyle(type, positie)}>
+          <img src={logo} alt="" className="w-full object-contain"
+            style={techniek === 'borduren' ? { filter: 'drop-shadow(0 1px 0 rgba(0,0,0,0.45)) saturate(1.05)' } : undefined} />
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: string }) {
+  const [step, setStep] = useState(0);
   const [branche, setBranche] = useState(defaultBranche);
-  const [type, setType] = useState<string>('tshirt');
-  const [kleurIdx, setKleurIdx] = useState(0);
-  const [logo, setLogo] = useState<string | null>(null);
-  const [logoPos, setLogoPos] = useState('borst-links');
-  const [techniek, setTechniek] = useState<'bedrukken' | 'borduren'>('borduren');
-  const [items, setItems] = useState<Record<string, ItemState>>({});
   const [team, setTeam] = useState('');
+  const [logo, setLogo] = useState<string | null>(null);
+  const [techniek, setTechniek] = useState<'borduren' | 'bedrukken'>('borduren');
+  const [defPositie, setDefPositie] = useState('borst-links');
+  const [draft, setDraft] = useState<{ type: string; kleur: number; positie: string; aantal: string }>({ type: 'polo', kleur: 0, positie: 'borst-links', aantal: '' });
+  const [items, setItems] = useState<Item[]>([]);
+  const [extras, setExtras] = useState<Record<string, { on: boolean; aantal: string }>>({});
   const [contact, setContact] = useState({ name: '', company: '', email: '', phone: '' });
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const kleur = kleuren[kleurIdx];
+  const typeLabel = (id: string) => kledingtypes.find((t) => t.id === id)?.label ?? id;
+  const posLabel = (id: string) => logoposities.find((p) => p.id === id)?.label ?? id;
 
   function onLogo(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.size > 4_000_000) { setError('Logo is te groot (max 4 MB).'); return; }
-    const reader = new FileReader();
-    reader.onload = () => setLogo(typeof reader.result === 'string' ? reader.result : null);
-    reader.readAsDataURL(f);
+    setError('');
+    const r = new FileReader();
+    r.onload = () => setLogo(typeof r.result === 'string' ? r.result : null);
+    r.readAsDataURL(f);
   }
-  function toggleItem(id: string) {
-    setItems((p) => ({ ...p, [id]: { on: !p[id]?.on, aantal: p[id]?.aantal ?? 0 } }));
+  function addItem() {
+    setItems((p) => [...p, { id: Date.now(), ...draft }]);
+    setDraft((d) => ({ ...d, aantal: '' }));
   }
-  function setAantal(id: string, n: number) {
-    setItems((p) => ({ ...p, [id]: { on: true, aantal: Math.max(0, n) } }));
-  }
-
-  const gekozen = pakketitems.filter((i) => items[i.id]?.on);
+  function removeItem(id: number) { setItems((p) => p.filter((i) => i.id !== id)); }
+  function toggleExtra(id: string) { setExtras((p) => ({ ...p, [id]: { on: !p[id]?.on, aantal: p[id]?.aantal ?? '' } })); }
 
   async function submit() {
     if (!contact.name || !contact.email || !consent) { setError('Vul je naam en e-mailadres in en geef toestemming.'); return; }
     setStatus('sending'); setError('');
-    const lijst = gekozen.map((i) => `- ${i.label}${items[i.id].aantal ? ` (${items[i.id].aantal}x)` : ''}`).join('\n') || '- (nog geen items gekozen)';
+    const kledingLijst = items.length
+      ? items.map((i) => `- ${typeLabel(i.type)}, ${kleuren[i.kleur].name}, logo ${posLabel(i.positie).toLowerCase()}${i.aantal ? `, ${i.aantal}x` : ''}`).join('\n')
+      : '- (nog geen kledingstukken toegevoegd)';
+    const extraLijst = extrasOpties.filter((e) => extras[e.id]?.on).map((e) => `- ${e.label}${extras[e.id].aantal ? ` (${extras[e.id].aantal}x)` : ''}`).join('\n');
     const bericht = [
-      'Pakket samengesteld via de website.',
+      'Pakket samengesteld via de configurator.',
       `Branche: ${branche || 'niet opgegeven'}`,
-      `Kledingstuk in preview: ${kledingtypes.find((t) => t.id === type)?.label}`,
-      `Kleur: ${kleur.name}`,
-      `Logo: ${logo ? 'aangeleverd' : 'nog niet aangeleverd'}, positie ${logoPos}, ${techniek}`,
       `Teamgrootte: ${team || 'niet opgegeven'}`,
-      'Gewenste artikelen:',
-      lijst,
+      `Logo: ${logo ? 'aangeleverd' : 'volgt later'}, techniek ${techniek}`,
+      'Kledingstukken:', kledingLijst,
+      ...(extraLijst ? ['Aanvullend:', extraLijst] : []),
     ].join('\n');
     try {
       const res = await fetch('/api/lead', {
@@ -69,152 +95,185 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
 
   if (status === 'ok') {
     return (
-      <div className="rounded-2xl border-2 border-amber-500 bg-white p-8 shadow-card">
+      <div className="mx-auto max-w-2xl rounded-2xl border-2 border-amber-500 bg-white p-8 text-center shadow-card">
         <p className="font-display text-2xl font-extrabold text-ink-900">Bedankt, {contact.name.split(' ')[0]}.</p>
         <p className="mt-3 text-warm">We hebben je samengestelde pakket binnen. We bellen je binnen een werkdag terug om het door te nemen en maken een offerte op maat. Je krijgt ook een bevestiging per e-mail.</p>
       </div>
     );
   }
 
-  const swatch = 'h-9 w-9 rounded-full border-2 transition';
-  const chip = 'cursor-pointer rounded-md border-2 px-4 py-2.5 text-sm font-semibold transition select-none';
-  const field = 'mt-1 w-full rounded-md border border-line bg-white px-4 py-3 text-sm text-ink-900 shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
+  const next = () => setStep((s) => Math.min(totaalStappen - 1, s + 1));
+  const back = () => setStep((s) => Math.max(0, s - 1));
+  const stapTitels = ['Voor wie', 'Je logo', 'Kleding', 'Aanvragen'];
 
   return (
-    <div className="space-y-8">
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Preview */}
-        <div className="rounded-2xl border border-line bg-mist p-6">
-          <div className="relative mx-auto aspect-square w-full max-w-sm">
-            <Garment color={kleur.hex} light={kleur.licht} type={type} />
-            {logo && (
-              <span style={logoBoxStyle(type, logoPos)}>
-                <img src={logo} alt="Jouw logo op de kleding" className="w-full object-contain"
-                  style={techniek === 'borduren' ? { filter: 'drop-shadow(0 1px 0 rgba(0,0,0,0.45)) saturate(1.05)' } : undefined} />
-              </span>
-            )}
-            {logoPos === 'rug' && logo && (
-              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-ink-900/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">Rugzijde</span>
-            )}
+    <div className="mx-auto max-w-4xl">
+      {/* Voortgang */}
+      <div className="flex items-center gap-2">
+        {Array.from({ length: totaalStappen }).map((_, i) => (
+          <div key={i} className="flex-1">
+            <div className={`h-1.5 rounded-full ${i <= step ? 'bg-amber-500' : 'bg-line'}`} />
+            <p className={`mt-2 text-xs font-bold uppercase tracking-wide ${i === step ? 'text-amber-600' : 'text-warm'}`}>{i + 1}. {stapTitels[i]}</p>
           </div>
-          <p className="mt-3 text-center text-xs text-warm">Indicatieve weergave. Het echte resultaat laten we je vooraf zien.</p>
-        </div>
-
-        {/* Stijlkeuzes */}
-        <div>
-          <p className="eyebrow">Stel samen</p>
-          <h3 className="mt-2 text-xl font-extrabold text-ink-900">Kies je kledingstuk en stijl</h3>
-
-          <p className="mt-5 text-sm font-semibold text-ink-800">Kledingstuk</p>
-          <div className="mt-2 flex flex-wrap gap-2.5">
-            {kledingtypes.map((t) => (
-              <button key={t.id} type="button" onClick={() => setType(t.id)}
-                className={`${chip} ${type === t.id ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{t.label}</button>
-            ))}
-          </div>
-
-          <p className="mt-5 text-sm font-semibold text-ink-800">Kleur: <span className="text-warm">{kleur.name}</span></p>
-          <div className="mt-2 flex flex-wrap gap-2.5">
-            {kleuren.map((k, i) => (
-              <button key={k.name} type="button" onClick={() => setKleurIdx(i)} aria-label={k.name}
-                className={`${swatch} ${i === kleurIdx ? 'border-amber-500 ring-2 ring-amber-200' : 'border-line'}`}
-                style={{ background: k.hex }} />
-            ))}
-          </div>
-
-          <p className="mt-5 text-sm font-semibold text-ink-800">Jouw logo</p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={() => fileRef.current?.click()} className="btn-outline px-4 py-2 text-[13px]">{logo ? 'Ander logo kiezen' : 'Upload je logo'}</button>
-            {logo && <button type="button" onClick={() => setLogo(null)} className="text-sm text-warm hover:text-ink-800">Verwijderen</button>}
-            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={onLogo} className="hidden" />
-          </div>
-
-          <p className="mt-5 text-sm font-semibold text-ink-800">Positie</p>
-          <div className="mt-2 flex flex-wrap gap-2.5">
-            {logoposities.map((p) => (
-              <button key={p.id} type="button" onClick={() => setLogoPos(p.id)}
-                className={`${chip} ${logoPos === p.id ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{p.label}</button>
-            ))}
-          </div>
-
-          <p className="mt-5 text-sm font-semibold text-ink-800">Techniek</p>
-          <div className="mt-2 flex flex-wrap gap-2.5">
-            {(['borduren', 'bedrukken'] as const).map((t) => (
-              <button key={t} type="button" onClick={() => setTechniek(t)}
-                className={`${chip} ${techniek === t ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{t === 'borduren' ? 'Borduren' : 'Bedrukken'}</button>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Pakket + branche */}
-      <div className="rounded-2xl border border-line bg-white p-6 shadow-soft">
-        <h3 className="text-xl font-extrabold text-ink-900">Wat heb je nodig voor je team?</h3>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {pakketitems.map((i) => {
-            const st = items[i.id];
-            return (
-              <div key={i.id} className={`rounded-lg border-2 p-3 transition ${st?.on ? 'border-amber-500 bg-amber-50' : 'border-line'}`}>
-                <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-ink-900">
-                  <input type="checkbox" checked={!!st?.on} onChange={() => toggleItem(i.id)} className="h-4 w-4 rounded border-line text-amber-500 focus:ring-amber-300" />
-                  {i.label}
-                </label>
-                {st?.on && (
-                  <input type="number" min={0} value={st.aantal || ''} onChange={(e) => setAantal(i.id, parseInt(e.target.value || '0', 10))}
-                    placeholder="aantal" className="mt-2 w-full rounded-md border border-line px-3 py-1.5 text-sm" />
-                )}
+      <div className="mt-8 rounded-2xl border border-line bg-white p-6 shadow-soft sm:p-8">
+        {step === 0 && (
+          <div>
+            <h3 className="text-xl font-extrabold text-ink-900">Voor wie is de kleding?</h3>
+            <p className="mt-1 text-sm text-warm">Zo stemmen we de modellen en het advies af op jouw werk.</p>
+            <p className="mt-5 text-sm font-semibold text-ink-800">Branche</p>
+            <div className="mt-2 flex flex-wrap gap-2.5">
+              {branches.map((b) => (
+                <button key={b.slug} type="button" onClick={() => setBranche(b.navLabel)}
+                  className={`${chip} ${branche === b.navLabel ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{b.navLabel}</button>
+              ))}
+              <button type="button" onClick={() => setBranche('Anders')} className={`${chip} ${branche === 'Anders' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>Anders</button>
+            </div>
+            <p className="mt-6 text-sm font-semibold text-ink-800">Teamgrootte</p>
+            <input className={`${field} max-w-xs`} value={team} onChange={(e) => setTeam(e.target.value)} placeholder="bijv. 8 medewerkers" />
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div>
+              <h3 className="text-xl font-extrabold text-ink-900">Je logo en afwerking</h3>
+              <p className="mt-1 text-sm text-warm">Upload je logo, dan zie je het zo op de kleding. Geen logo bij de hand? Sla over, je kunt het later aanleveren.</p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <button type="button" onClick={() => fileRef.current?.click()} className="btn-outline px-4 py-2 text-[13px]">{logo ? 'Ander logo kiezen' : 'Upload je logo'}</button>
+                {logo && <button type="button" onClick={() => setLogo(null)} className="text-sm text-warm hover:text-ink-800">Verwijderen</button>}
+                <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={onLogo} className="hidden" />
               </div>
-            );
-          })}
-        </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="text-sm font-medium text-ink-800">Branche</label>
-            <select className={field} value={branche} onChange={(e) => setBranche(e.target.value)}>
-              <option value="">Kies een branche</option>
-              {branches.map((b) => <option key={b.slug} value={b.navLabel}>{b.navLabel}</option>)}
-              <option value="Anders">Anders</option>
-            </select>
+              <p className="mt-5 text-sm font-semibold text-ink-800">Techniek</p>
+              <div className="mt-2 flex flex-wrap gap-2.5">
+                {(['borduren', 'bedrukken'] as const).map((t) => (
+                  <button key={t} type="button" onClick={() => setTechniek(t)} className={`${chip} ${techniek === t ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{t === 'borduren' ? 'Borduren' : 'Bedrukken'}</button>
+                ))}
+              </div>
+              <p className="mt-5 text-sm font-semibold text-ink-800">Standaardpositie</p>
+              <div className="mt-2 flex flex-wrap gap-2.5">
+                {logoposities.map((p) => (
+                  <button key={p.id} type="button" onClick={() => { setDefPositie(p.id); setDraft((d) => ({ ...d, positie: p.id })); }} className={`${chip} ${defPositie === p.id ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{p.label}</button>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-line bg-mist p-6">
+              <Preview type={draft.type} kleur={draft.kleur} logo={logo} positie={defPositie} techniek={techniek} />
+              <p className="mt-3 text-center text-xs text-warm">Voorbeeld met je logo. In de volgende stap kies je de kledingstukken.</p>
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium text-ink-800">Teamgrootte</label>
-            <input className={field} value={team} onChange={(e) => setTeam(e.target.value)} placeholder="bijv. 8 medewerkers" />
-          </div>
-        </div>
-      </div>
+        )}
 
-      {/* Overzicht + contact */}
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="rounded-2xl bg-ink-900 p-6 text-white">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-400">Jouw pakket</p>
-          <ul className="mt-4 space-y-2 text-sm text-ink-100">
-            <li><span className="text-ink-300">Kledingstuk:</span> {kledingtypes.find((t) => t.id === type)?.label}, {kleur.name}</li>
-            <li><span className="text-ink-300">Logo:</span> {logo ? `aangeleverd, ${logoposities.find((p) => p.id === logoPos)?.label.toLowerCase()}, ${techniek}` : 'nog niet aangeleverd'}</li>
-            <li><span className="text-ink-300">Team:</span> {team || 'nog niet opgegeven'}</li>
-          </ul>
-          <p className="mt-4 text-xs font-bold uppercase tracking-wide text-ink-300">Artikelen</p>
-          <ul className="mt-2 space-y-1 text-sm text-ink-100">
-            {gekozen.length ? gekozen.map((i) => <li key={i.id}>{i.label}{items[i.id].aantal ? ` (${items[i.id].aantal}x)` : ''}</li>) : <li className="text-ink-400">Nog geen artikelen gekozen</li>}
-          </ul>
-        </div>
+        {step === 2 && (
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div>
+              <h3 className="text-xl font-extrabold text-ink-900">Stel je kleding samen</h3>
+              <p className="mt-1 text-sm text-warm">Kies een kledingstuk, kleur en aantal en voeg het toe. Herhaal voor elk type dat je nodig hebt.</p>
+              <div className="mt-4 rounded-xl border border-line bg-mist p-4">
+                <Preview type={draft.type} kleur={draft.kleur} logo={logo} positie={draft.positie} techniek={techniek} />
+              </div>
+              <p className="mt-5 text-sm font-semibold text-ink-800">Kledingstuk</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {kledingtypes.map((t) => (
+                  <button key={t.id} type="button" onClick={() => setDraft((d) => ({ ...d, type: t.id }))} className={`${chip} ${draft.type === t.id ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{t.label}</button>
+                ))}
+              </div>
+              <p className="mt-4 text-sm font-semibold text-ink-800">Kleur: <span className="text-warm">{kleuren[draft.kleur].name}</span></p>
+              <div className="mt-2 flex flex-wrap gap-2.5">
+                {kleuren.map((k, i) => (
+                  <button key={k.name} type="button" aria-label={k.name} onClick={() => setDraft((d) => ({ ...d, kleur: i }))} className={`${swatch} ${i === draft.kleur ? 'border-amber-500 ring-2 ring-amber-200' : 'border-line'}`} style={{ background: k.hex }} />
+                ))}
+              </div>
+              <div className="mt-4 flex flex-wrap items-end gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-ink-800">Logo-positie</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {logoposities.map((p) => (
+                      <button key={p.id} type="button" onClick={() => setDraft((d) => ({ ...d, positie: p.id }))} className={`${chip} px-3 py-2 ${draft.positie === p.id ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-line text-ink-700 hover:border-ink-300'}`}>{p.label}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-ink-800">Aantal</p>
+                  <input type="number" min={0} value={draft.aantal} onChange={(e) => setDraft((d) => ({ ...d, aantal: e.target.value }))} placeholder="bijv. 10" className="mt-2 w-28 rounded-md border border-line px-3 py-2 text-sm" />
+                </div>
+              </div>
+              <button type="button" onClick={addItem} className="btn-primary mt-5">Voeg toe aan pakket</button>
+            </div>
 
-        <div className="rounded-2xl border-2 border-amber-500 bg-white p-6 shadow-card">
-          <h3 className="text-lg font-extrabold text-ink-900">Vraag je pakket als offerte aan</h3>
-          <p className="mt-1 text-sm text-warm">We bellen je binnen een werkdag terug en denken vrijblijvend mee.</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input className={field} placeholder="Naam *" value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} autoComplete="name" />
-            <input className={field} placeholder="Bedrijf" value={contact.company} onChange={(e) => setContact({ ...contact, company: e.target.value })} autoComplete="organization" />
-            <input className={field} type="email" placeholder="E-mail *" value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} autoComplete="email" />
-            <input className={field} type="tel" placeholder="Telefoon" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} autoComplete="tel" />
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-600">Jouw pakket</p>
+              {items.length === 0 && <p className="mt-3 text-sm text-warm">Nog geen kledingstukken toegevoegd. Stel links je eerste stuk samen en voeg het toe.</p>}
+              <ul className="mt-3 space-y-3">
+                {items.map((i) => (
+                  <li key={i.id} className="flex items-center gap-3 rounded-lg border border-line bg-white p-3">
+                    <div className="h-14 w-14 shrink-0 rounded bg-mist p-1"><Preview type={i.type} kleur={i.kleur} logo={logo} positie={i.positie} techniek={techniek} /></div>
+                    <div className="min-w-0 grow text-sm">
+                      <p className="font-bold text-ink-900">{typeLabel(i.type)}{i.aantal ? ` · ${i.aantal}x` : ''}</p>
+                      <p className="text-warm">{kleuren[i.kleur].name}, logo {posLabel(i.positie).toLowerCase()}</p>
+                    </div>
+                    <button type="button" onClick={() => removeItem(i.id)} className="shrink-0 text-sm text-warm hover:text-amber-700">Verwijder</button>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 text-sm font-semibold text-ink-800">Aanvullend nodig?</p>
+              <p className="text-xs text-warm">Items zonder bedrukking, zoals schoenen.</p>
+              <div className="mt-2 space-y-2">
+                {extrasOpties.map((e) => (
+                  <div key={e.id} className={`flex items-center gap-3 rounded-lg border-2 p-2.5 ${extras[e.id]?.on ? 'border-amber-500 bg-amber-50' : 'border-line'}`}>
+                    <label className="flex grow cursor-pointer items-center gap-2 text-sm font-semibold text-ink-900">
+                      <input type="checkbox" checked={!!extras[e.id]?.on} onChange={() => toggleExtra(e.id)} className="h-4 w-4 rounded border-line text-amber-500 focus:ring-amber-300" />
+                      {e.label}
+                    </label>
+                    {extras[e.id]?.on && <input type="number" min={0} value={extras[e.id].aantal} onChange={(ev) => setExtras((p) => ({ ...p, [e.id]: { on: true, aantal: ev.target.value } }))} placeholder="aantal" className="w-20 rounded-md border border-line px-2 py-1 text-sm" />}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <label className="mt-3 flex items-start gap-3 text-sm text-warm">
-            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-4 w-4 rounded border-line text-amber-500 focus:ring-amber-300" />
-            Ik ga ermee akkoord dat mijn gegevens worden gebruikt om mijn aanvraag te beantwoorden.
-          </label>
-          {error && <p className="mt-3 text-sm font-medium text-amber-700" role="alert">{error}</p>}
-          <button type="button" onClick={submit} disabled={status === 'sending'} className="btn-primary mt-4 w-full">
-            {status === 'sending' ? 'Versturen' : 'Verstuur mijn pakket'}
-          </button>
+        )}
+
+        {step === 3 && (
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div className="rounded-2xl bg-ink-900 p-6 text-white">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-400">Jouw pakket</p>
+              <ul className="mt-4 space-y-1 text-sm text-ink-100">
+                <li><span className="text-ink-300">Branche:</span> {branche || 'niet opgegeven'}</li>
+                <li><span className="text-ink-300">Team:</span> {team || 'niet opgegeven'}</li>
+                <li><span className="text-ink-300">Logo:</span> {logo ? `aangeleverd, ${techniek}` : 'volgt later'}</li>
+              </ul>
+              <p className="mt-4 text-xs font-bold uppercase tracking-wide text-ink-300">Kledingstukken</p>
+              <ul className="mt-2 space-y-1 text-sm text-ink-100">
+                {items.length ? items.map((i) => <li key={i.id}>{typeLabel(i.type)}, {kleuren[i.kleur].name}{i.aantal ? `, ${i.aantal}x` : ''}</li>) : <li className="text-ink-400">Geen kledingstukken gekozen</li>}
+                {extrasOpties.filter((e) => extras[e.id]?.on).map((e) => <li key={e.id}>{e.label}{extras[e.id].aantal ? `, ${extras[e.id].aantal}x` : ''}</li>)}
+              </ul>
+            </div>
+            <div className="rounded-2xl border-2 border-amber-500 bg-white p-6 shadow-card">
+              <h3 className="text-lg font-extrabold text-ink-900">Vraag je pakket als offerte aan</h3>
+              <p className="mt-1 text-sm text-warm">We bellen je binnen een werkdag terug en denken vrijblijvend mee.</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <input className={field} placeholder="Naam *" value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} autoComplete="name" />
+                <input className={field} placeholder="Bedrijf" value={contact.company} onChange={(e) => setContact({ ...contact, company: e.target.value })} autoComplete="organization" />
+                <input className={field} type="email" placeholder="E-mail *" value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} autoComplete="email" />
+                <input className={field} type="tel" placeholder="Telefoon" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} autoComplete="tel" />
+              </div>
+              <label className="mt-3 flex items-start gap-3 text-sm text-warm">
+                <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-4 w-4 rounded border-line text-amber-500 focus:ring-amber-300" />
+                Ik ga ermee akkoord dat mijn gegevens worden gebruikt om mijn aanvraag te beantwoorden.
+              </label>
+              {error && <p className="mt-3 text-sm font-medium text-amber-700" role="alert">{error}</p>}
+              <button type="button" onClick={submit} disabled={status === 'sending'} className="btn-primary mt-4 w-full">{status === 'sending' ? 'Versturen' : 'Verstuur mijn pakket'}</button>
+            </div>
+          </div>
+        )}
+
+        {error && step !== 3 && <p className="mt-4 text-sm font-medium text-amber-700" role="alert">{error}</p>}
+
+        <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-5">
+          <button type="button" onClick={back} className={`text-sm font-semibold text-warm hover:text-ink-800 ${step === 0 ? 'invisible' : ''}`}>Terug</button>
+          {step < totaalStappen - 1 && <button type="button" onClick={next} className="btn-primary">Volgende</button>}
         </div>
       </div>
     </div>
