@@ -199,6 +199,9 @@ export default async function KlantPage({ params }: { params: Promise<{ id: stri
                   <div>
                     <p className="text-sm font-semibold text-ink-900">{fmt(b.created_at)}</p>
                     <p className="text-sm text-warm">Aangevraagd door {b.aangevraagd_door || 'onbekend'}</p>
+                    {(b.medewerker_naam || b.waarde != null) && (
+                      <p className="text-sm text-warm">{b.medewerker_naam ? `Voor ${b.medewerker_naam}` : ''}{b.medewerker_naam && b.waarde != null ? ' · ' : ''}{b.waarde != null ? `waarde ${euro(Number(b.waarde))}` : ''}</p>
+                    )}
                   </div>
                   <form action={zetStatus} className="flex items-center gap-2">
                     <input type="hidden" name="orgId" value={id} />

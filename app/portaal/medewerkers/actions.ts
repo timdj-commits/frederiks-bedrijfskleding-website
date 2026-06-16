@@ -1,6 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { getPortaalUser, getMijnOrganisatie, getKledinglijn, maakMedewerker, verwijderMedewerker, zetMaat } from '@/lib/portaal/queries';
+import { getPortaalUser, getMijnOrganisatie, getKledinglijn, maakMedewerker, verwijderMedewerker, zetMaat, zetBudget } from '@/lib/portaal/queries';
 
 async function guardOrg() {
   const user = await getPortaalUser();
@@ -22,6 +22,16 @@ export async function verwijderMedewerkerAction(formData: FormData) {
   if (!org) redirect('/portaal/login');
   const id = String(formData.get('id') ?? '');
   if (id) await verwijderMedewerker(id);
+  redirect('/portaal/medewerkers');
+}
+
+export async function bewaarBudget(formData: FormData) {
+  const org = await guardOrg();
+  if (!org) redirect('/portaal/login');
+  const id = String(formData.get('medewerker_id') ?? '');
+  const ruw = String(formData.get('budget') ?? '').replace(/[^0-9.,]/g, '').replace(',', '.');
+  const budget = ruw === '' ? null : Number(ruw);
+  if (id) await zetBudget(id, budget);
   redirect('/portaal/medewerkers');
 }
 

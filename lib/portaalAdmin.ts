@@ -11,7 +11,7 @@ export type Organisatie = { id: string; naam: string; plaats: string | null; cre
 export type Gebruiker = { id: string; organisatie_id: string; email: string; naam: string | null; rol: string };
 export type KledingItem = { id: string; organisatie_id: string; naam: string; merk: string | null; kleur: string | null; logopositie: string | null; techniek: string | null; richtprijs: number | null; actief: boolean };
 export type Bestelregel = { id: string; item_naam: string; maat: string | null; aantal: number };
-export type Bestelling = { id: string; status: string; aangevraagd_door: string | null; notitie: string | null; created_at: string; portaal_bestelregels: Bestelregel[] };
+export type Bestelling = { id: string; status: string; aangevraagd_door: string | null; notitie: string | null; created_at: string; medewerker_naam: string | null; waarde: number | null; portaal_bestelregels: Bestelregel[] };
 
 export async function listOrganisaties(): Promise<Organisatie[]> {
   const sb = admin(); if (!sb) return [];
@@ -57,7 +57,7 @@ export async function listBestellingen(orgId: string): Promise<Bestelling[]> {
   const sb = admin(); if (!sb) return [];
   const { data } = await sb
     .from('portaal_bestellingen')
-    .select('id, status, aangevraagd_door, notitie, created_at, portaal_bestelregels(id, item_naam, maat, aantal)')
+    .select('id, status, aangevraagd_door, notitie, created_at, medewerker_naam, waarde, portaal_bestelregels(id, item_naam, maat, aantal)')
     .eq('organisatie_id', orgId)
     .order('created_at', { ascending: false });
   return (data as Bestelling[]) ?? [];

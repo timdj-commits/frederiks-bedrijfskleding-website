@@ -8,6 +8,7 @@ export const metadata: Metadata = { title: 'Mijn bestellingen', robots: { index:
 export const dynamic = 'force-dynamic';
 
 const datum = (s: string) => new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(s));
+const euro = (n: number) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n || 0);
 
 const statusLabel: Record<string, string> = {
   nieuw: 'Nieuw',
@@ -86,6 +87,9 @@ export default async function Bestellingen({ searchParams }: { searchParams: Pro
                 <p className="text-sm font-semibold text-ink-900">{datum(b.created_at)}</p>
                 <StatusBadge status={b.status} />
               </div>
+              {(b.medewerker_naam || b.waarde != null) && (
+                <p className="mt-1 text-xs text-warm">{b.medewerker_naam ? `Voor ${b.medewerker_naam}` : ''}{b.medewerker_naam && b.waarde != null ? ' · ' : ''}{b.waarde != null ? `geschat ${euro(Number(b.waarde))}` : ''}</p>
+              )}
 
               {b.portaal_bestelregels.length > 0 ? (
                 <ul className="mt-4 divide-y divide-line text-sm">
