@@ -11,8 +11,11 @@ import {
   getBudgetVerbruik,
   getWebshopMedewerkers,
   getWebshopOrders,
+  getVoorkeursmaten,
+  getPakketten,
 } from '@/lib/portaal/webshop';
 import WebshopClient from './WebshopClient';
+import { bestelPakketActie } from './actions';
 
 export const metadata: Metadata = { title: 'Webshop', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -40,7 +43,14 @@ const goedkeuringLabel: Record<string, string> = {
 export default async function Webshop({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; leeg?: string; fout?: string; budget?: string }>;
+  searchParams: Promise<{
+    ok?: string;
+    leeg?: string;
+    fout?: string;
+    budget?: string;
+    pakketok?: string;
+    reden?: string;
+  }>;
 }) {
   if (!isPortalConfigured) {
     return (
@@ -69,16 +79,20 @@ export default async function Webshop({
   }
 
   const sp = await searchParams;
-  const [assortiment, eigenMedewerker, orders, toegang] = await Promise.all([
+  const [assortiment, eigenMedewerker, orders, toegang, pakketten] = await Promise.all([
     getAssortiment(),
     getMijnMedewerker(),
     getWebshopOrders(),
     getMijnToegang(),
+    getPakketten(),
   ]);
 
   // Geen eigen medewerker-match (bijv. klantbeheerder): laat een medewerker kiezen.
   const kiesMedewerker = !eigenMedewerker;
   const medewerkers = kiesMedewerker ? await getWebshopMedewerkers() : [];
+
+  // Voorkeursmaten alleen bij een eigen medewerker (per product de voorkeursvariant + plus/minus).
+  const voorkeursmaten = eigenMedewerker ? await getVoorkeursmaten(eigenMedewerker.id) : {};
 
   // Resterend budget alleen tonen bij een eigen medewerker met budget en budget_actief.
   let resterendBudget: number | null = null;
@@ -87,9 +101,19 @@ export default async function Webshop({
     resterendBudget = Number(eigenMedewerker.budget) - verbruikt;
   }
 
+  const budgetType = eigenMedewerker?.budget_type ?? 'euro';
+  const productbudget = eigenMedewerker?.productbudget ?? null;
+  const buitenBudgetToegestaan = eigenMedewerker?.buiten_budget_toegestaan ?? false;
+
   const eigenNaam =
     eigenMedewerker?.naam ??
     ([eigenMedewerker?.voornaam, eigenMedewerker?.achternaam].filter(Boolean).join(' ') || null);
+
+  const startpakketten = pakketten.filter((p) => p.soort === 'start');
+  const regulierePakketten = pakketten.filter((p) => p.soort === 'regulier');
+
+  const variantLabel = (maat: string | null, kleur: string | null) =>
+    [maat, kleur].filter(Boolean).join(' · ') || 'Standaard';
 
   return (
     <main className="container-x py-12">
@@ -116,6 +140,11 @@ export default async function Webshop({
           Je bestelling is geplaatst. {org.goedkeuren_bestellingen ? 'Hij wacht nu op goedkeuring.' : 'We pakken hem op.'}
         </div>
       )}
+      {sp?.pakketok && (
+        <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-ink-800">
+          Je pakket is besteld. {org.goedkeuren_bestellingen ? 'Het wacht nu op goedkeuring.' : 'We pakken het op.'}
+        </div>
+      )}
       {sp?.leeg && (
         <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-ink-800">
           Je winkelwagen was leeg. Voeg eerst een product toe.
@@ -126,16 +155,150 @@ export default async function Webshop({
           Het totaal was hoger dan het resterende budget. Pas de winkelwagen aan en probeer het opnieuw.
         </div>
       )}
+      {sp?.reden && (
+        <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-ink-800">
+          {sp.reden}
+        </div>
+      )}
       {sp?.fout && (
         <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-ink-800">
           Er ging iets mis bij het plaatsen. Probeer het zo nog eens of bel ons even.
         </div>
       )}
 
+      {startpakketten.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-display text-xl font-extrabold text-ink-900">Startpakket</h2>
+          <p className="mt-2 max-w-2xl text-sm text-warm">
+            Begin met je startpakket. Dit basispakket bestel je eerst, daarna kun je losse artikelen bijbestellen.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {startpakketten.map((p) => (
+              <div key={p.id} className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 shadow-soft">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-display text-lg font-extrabold text-ink-900">{p.naam}</p>
+                  {p.pakketprijs != null && (
+                    <span className="font-semibold text-ink-900">{euro(Number(p.pakketprijs))}</span>
+                  )}
+                </div>
+                {p.buiten_budget && (
+                  <p className="mt-1 text-xs font-semibold text-amber-700">Telt niet mee in je budget</p>
+                )}
+                {p.producten.length > 0 && (
+                  <ul className="mt-3 space-y-1 text-sm text-warm">
+                    {p.producten.map((pp, i) => (
+                      <li key={i}>
+                        {pp.aantal}x {pp.product_naam}
+                        {pp.variant_maat || pp.variant_kleur ? ` (${variantLabel(pp.variant_maat, pp.variant_kleur)})` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <form action={bestelPakketActie} className="mt-4">
+                  <input type="hidden" name="pakket_id" value={p.id} />
+                  {kiesMedewerker && (
+                    <div className="mb-3">
+                      <label htmlFor={`pmw-${p.id}`} className="block text-xs font-semibold text-warm">
+                        Bestellen voor medewerker
+                      </label>
+                      <select
+                        id={`pmw-${p.id}`}
+                        name="medewerker_id"
+                        defaultValue=""
+                        className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                      >
+                        <option value="">Geen specifieke medewerker</option>
+                        {medewerkers.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.naam ?? ([m.voornaam, m.achternaam].filter(Boolean).join(' ') || m.email)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <button type="submit" className="btn-primary w-full">
+                    Startpakket bestellen
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {regulierePakketten.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-display text-xl font-extrabold text-ink-900">Pakketten</h2>
+          <p className="mt-2 max-w-2xl text-sm text-warm">
+            Bestel een compleet pakket in één keer voor een vaste prijs.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {regulierePakketten.map((p) => (
+              <div key={p.id} className="rounded-2xl border border-line bg-white p-6 shadow-soft">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-bold text-ink-900">{p.naam}</p>
+                  {p.pakketprijs != null && (
+                    <span className="font-semibold text-ink-900">{euro(Number(p.pakketprijs))}</span>
+                  )}
+                </div>
+                {p.buiten_budget && (
+                  <p className="mt-1 text-xs font-semibold text-amber-700">Telt niet mee in je budget</p>
+                )}
+                {p.producten.length > 0 && (
+                  <ul className="mt-3 space-y-1 text-sm text-warm">
+                    {p.producten.map((pp, i) => (
+                      <li key={i}>
+                        {pp.aantal}x {pp.product_naam}
+                        {pp.variant_maat || pp.variant_kleur ? ` (${variantLabel(pp.variant_maat, pp.variant_kleur)})` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <form action={bestelPakketActie} className="mt-4">
+                  <input type="hidden" name="pakket_id" value={p.id} />
+                  {kiesMedewerker && (
+                    <div className="mb-3">
+                      <label htmlFor={`pmwr-${p.id}`} className="block text-xs font-semibold text-warm">
+                        Bestellen voor medewerker
+                      </label>
+                      <select
+                        id={`pmwr-${p.id}`}
+                        name="medewerker_id"
+                        defaultValue=""
+                        className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                      >
+                        <option value="">Geen specifieke medewerker</option>
+                        {medewerkers.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.naam ?? ([m.voornaam, m.achternaam].filter(Boolean).join(' ') || m.email)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <button type="submit" className="btn-primary w-full">
+                    Pakket bestellen
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <WebshopClient
         producten={assortiment}
         budgetActief={org.budget_actief}
         resterendBudget={resterendBudget}
+        budgetType={budgetType}
+        productbudget={productbudget}
+        buitenBudgetToegestaan={buitenBudgetToegestaan}
+        voorkeursmaten={voorkeursmaten}
+        toonVoorraad={org.toon_voorraad}
+        gebruikReferentienr={org.gebruik_referentienr}
+        opmerkingBijBestelling={org.opmerking_bij_bestelling}
+        minBestelbedrag={org.min_bestelbedrag}
+        maxBestelbedrag={org.max_bestelbedrag}
         eigenMedewerkerNaam={eigenNaam}
         kiesMedewerker={kiesMedewerker}
         medewerkers={medewerkers}

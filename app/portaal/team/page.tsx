@@ -135,15 +135,23 @@ export default async function TeamPagina({
                       {[m.functie, m.email].filter(Boolean).join(' · ') || 'Geen contactgegevens'}
                     </p>
                   </div>
-                  {m.toegang ? (
-                    <span className="inline-block rounded-full border border-green-300 bg-green-50 px-3 py-1 text-xs font-semibold text-green-800">
-                      {rolLabel[m.toegang.rol] ?? m.toegang.rol}
-                    </span>
-                  ) : (
-                    <span className="inline-block rounded-full border border-line bg-cream px-3 py-1 text-xs font-semibold text-warm">
-                      Geen toegang
-                    </span>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {m.toegang ? (
+                      <span className="inline-block rounded-full border border-green-300 bg-green-50 px-3 py-1 text-xs font-semibold text-green-800">
+                        {rolLabel[m.toegang.rol] ?? m.toegang.rol}
+                      </span>
+                    ) : (
+                      <span className="inline-block rounded-full border border-line bg-cream px-3 py-1 text-xs font-semibold text-warm">
+                        Geen toegang
+                      </span>
+                    )}
+                    <Link
+                      href={`/portaal/team/${m.medewerkerId}`}
+                      className="inline-block rounded-md border border-line px-2.5 py-1 text-xs font-semibold text-ink-700 hover:bg-mist"
+                    >
+                      Instellingen
+                    </Link>
+                  </div>
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-end gap-4 border-t border-line pt-4">

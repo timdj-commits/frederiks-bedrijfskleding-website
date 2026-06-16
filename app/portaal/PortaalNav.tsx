@@ -3,9 +3,9 @@ import { portaalLogout } from './actions';
 import type { PortaalRol } from '@/lib/portaal/team';
 
 /**
- * Rol-bewuste portaalnavigatie. Webshop en Mijn bestellingen zijn voor iedereen.
- * Team, Goedkeuringen en Medewerkers alleen voor beheerder en leidinggevende
- * (Team alleen voor beheerder). Klapt netjes in op mobiel door te wrappen.
+ * Rol-bewuste portaalnavigatie. Webshop, bestellingen, retouren en vragen zijn
+ * voor iedereen. Team, Goedkeuringen en Medewerkers alleen voor beheerder en
+ * leidinggevende (Team alleen voor beheerder). Klapt netjes in op mobiel.
  */
 export default function PortaalNav({ rol, actief }: { rol: PortaalRol | null; actief?: string }) {
   const mag = (rollen: PortaalRol[]) => rol != null && rollen.includes(rol);
@@ -13,6 +13,8 @@ export default function PortaalNav({ rol, actief }: { rol: PortaalRol | null; ac
     { href: '/portaal', label: 'Overzicht', toon: true },
     { href: '/portaal/webshop', label: 'Webshop', toon: true },
     { href: '/portaal/bestellingen', label: 'Mijn bestellingen', toon: true },
+    { href: '/portaal/retouren', label: 'Retouren', toon: true },
+    { href: '/portaal/klachten', label: 'Vragen en klachten', toon: true },
     { href: '/portaal/goedkeuringen', label: 'Goedkeuringen', toon: mag(['beheerder', 'leidinggevende']) },
     { href: '/portaal/medewerkers', label: 'Medewerkers', toon: mag(['beheerder', 'leidinggevende']) },
     { href: '/portaal/team', label: 'Team en toegang', toon: mag(['beheerder']) },

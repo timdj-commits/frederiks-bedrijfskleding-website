@@ -7,12 +7,29 @@ import {
   getBudgetVerbruik,
   getWebshopMedewerkers,
   maakWebshopBestelling,
+  bestelPakket,
   type BestelRegelInput,
+  type WebshopMedewerker,
 } from '@/lib/portaal/webshop';
 import { getServerSupabase } from '@/lib/portaal/supabaseServer';
 
 const effectievePrijs = (verkoopprijs: number | null, meerprijs: number | null) =>
   (Number(verkoopprijs) || 0) + (Number(meerprijs) || 0);
+
+/** Bepaalt de medewerker: eigen match, anders de gekozen medewerker uit het formulier. */
+async function bepaalMedewerker(
+  formData: FormData,
+): Promise<{ id: string | null; medewerker: WebshopMedewerker | null }> {
+  const eigen = await getMijnMedewerker();
+  if (eigen) return { id: eigen.id, medewerker: eigen };
+
+  const gekozen = String(formData.get('medewerker_id') ?? '').trim();
+  if (!gekozen) return { id: null, medewerker: null };
+
+  const lijst = await getWebshopMedewerkers();
+  const mw = lijst.find((m) => m.id === gekozen) ?? null;
+  return { id: gekozen, medewerker: mw };
+}
 
 export async function plaatsBestelling(formData: FormData) {
   const sb = await getServerSupabase();
@@ -54,28 +71,64 @@ export async function plaatsBestelling(formData: FormData) {
   }
   if (regels.length === 0) redirect('/portaal/webshop?leeg=1');
 
-  // Bepaal de medewerker: eigen match, anders de gekozen medewerker uit het formulier.
-  const eigen = await getMijnMedewerker();
-  let medewerkerId: string | null = eigen?.id ?? null;
-  const gekozen = String(formData.get('medewerker_id') ?? '').trim();
-  if (!medewerkerId && gekozen) medewerkerId = gekozen;
+  const { id: medewerkerId, medewerker } = await bepaalMedewerker(formData);
 
-  // Budgetcontrole als budget actief is en er een medewerker met budget is.
+  // Verbruik ophalen voor de budgetcheck (alleen relevant bij budget_actief en een medewerker met budget).
+  let verbruikt = 0;
   if (org.budget_actief && medewerkerId) {
-    const lijst = await getWebshopMedewerkers();
-    const mw = (eigen?.id === medewerkerId ? eigen : lijst.find((m) => m.id === medewerkerId)) ?? null;
-    if (mw && mw.budget != null) {
-      const verbruikt = await getBudgetVerbruik(medewerkerId);
-      const resterend = Number(mw.budget) - verbruikt;
-      const totaal = regels.reduce((sum, r) => sum + r.aantal * r.stukprijs, 0);
-      if (totaal > resterend) redirect('/portaal/webshop?budget=1');
-    }
+    verbruikt = await getBudgetVerbruik(medewerkerId);
   }
 
   const notitie = String(formData.get('notitie') ?? '').trim();
+  const referentienr = String(formData.get('referentienr') ?? '').trim();
   const door = auth.user.email ?? 'onbekend';
-  const res = await maakWebshopBestelling(org, door, medewerkerId, regels, notitie);
-  if (!res.ok) redirect('/portaal/webshop?fout=1');
+
+  const res = await maakWebshopBestelling(org, door, medewerkerId, regels, notitie, {
+    medewerker,
+    verbruikt,
+    referentienr,
+  });
+  if (!res.ok) {
+    // res.error bevat een nette reden (budget, productbudget, min/max bedrag); toon die aan de gebruiker.
+    redirect(`/portaal/webshop?reden=${encodeURIComponent(res.error ?? 'Plaatsen mislukt')}`);
+  }
 
   redirect('/portaal/webshop?ok=1');
+}
+
+export async function bestelPakketActie(formData: FormData) {
+  const sb = await getServerSupabase();
+  if (!sb) redirect('/portaal/login');
+  const { data: auth } = await sb.auth.getUser();
+  if (!auth.user) redirect('/portaal/login');
+
+  const org = await getMijnWebshopOrganisatie();
+  if (!org) redirect('/portaal');
+
+  const pakketId = String(formData.get('pakket_id') ?? '').trim();
+  if (!pakketId) redirect('/portaal/webshop?fout=1');
+
+  const { id: medewerkerId, medewerker } = await bepaalMedewerker(formData);
+
+  let verbruikt = 0;
+  if (org.budget_actief && medewerkerId) {
+    verbruikt = await getBudgetVerbruik(medewerkerId);
+  }
+
+  const referentienr = String(formData.get('referentienr') ?? '').trim();
+  const door = auth.user.email ?? 'onbekend';
+
+  const res = await bestelPakket(pakketId, {
+    org,
+    aangevraagdDoor: door,
+    medewerkerId,
+    medewerker,
+    verbruikt,
+    referentienr,
+  });
+  if (!res.ok) {
+    redirect(`/portaal/webshop?reden=${encodeURIComponent(res.error ?? 'Pakket bestellen mislukt')}`);
+  }
+
+  redirect('/portaal/webshop?pakketok=1');
 }

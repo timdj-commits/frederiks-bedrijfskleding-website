@@ -203,3 +203,219 @@ export async function zetBudget(medewerkerId: string, budget: number | null): Pr
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+// --- Detailinstellingen per medewerker: budget + vestiging + voorkeursmaten ---
+
+export type BudgetType = 'euro' | 'punten';
+export type BudgetPeriode = 'geen' | 'maand' | 'kwartaal' | 'jaar';
+
+export type MedewerkerDetail = {
+  id: string;
+  naam: string;
+  functie: string | null;
+  email: string | null;
+  budget: number | null;
+  budgetType: BudgetType;
+  startbudget: number | null;
+  periodiekBudget: number | null;
+  budgetPeriode: BudgetPeriode;
+  behoudRestbudget: boolean;
+  productbudget: number | null;
+  buitenBudgetToegestaan: boolean;
+  vestigingId: string | null;
+};
+
+export type Vestiging = { id: string; naam: string };
+
+export type ProductMetMaten = {
+  id: string;
+  naam: string;
+  maten: string[];
+};
+
+export type Voorkeursmaat = {
+  id: string;
+  productId: string;
+  voorkeursmaat: string | null;
+  plusMinusToegestaan: boolean;
+};
+
+function leesBudgetType(waarde: unknown): BudgetType {
+  return waarde === 'punten' ? 'punten' : 'euro';
+}
+function leesBudgetPeriode(waarde: unknown): BudgetPeriode {
+  return waarde === 'maand' || waarde === 'kwartaal' || waarde === 'jaar' ? waarde : 'geen';
+}
+
+/** Haalt één medewerker op met alle budgetvelden en de vestiging. RLS borgt de scope. */
+export async function getMedewerkerDetail(id: string): Promise<MedewerkerDetail | null> {
+  const sb = await getServerSupabase();
+  if (!sb) return null;
+  const { data } = await sb
+    .from('medewerkers')
+    .select(
+      'id, naam, voornaam, achternaam, functie, email, budget, budget_type, startbudget, periodiek_budget, budget_periode, behoud_restbudget, productbudget, buiten_budget_toegestaan, vestiging_id',
+    )
+    .eq('id', id)
+    .maybeSingle();
+  if (!data) return null;
+  const m = data as unknown as {
+    id: string;
+    naam: string | null;
+    voornaam: string | null;
+    achternaam: string | null;
+    functie: string | null;
+    email: string | null;
+    budget: number | null;
+    budget_type: string | null;
+    startbudget: number | null;
+    periodiek_budget: number | null;
+    budget_periode: string | null;
+    behoud_restbudget: boolean | null;
+    productbudget: number | null;
+    buiten_budget_toegestaan: boolean | null;
+    vestiging_id: string | null;
+  };
+  const naam = m.naam ?? [m.voornaam, m.achternaam].filter(Boolean).join(' ') ?? '';
+  return {
+    id: m.id,
+    naam: naam || (m.email ?? 'Onbekend'),
+    functie: m.functie,
+    email: m.email,
+    budget: m.budget != null ? Number(m.budget) : null,
+    budgetType: leesBudgetType(m.budget_type),
+    startbudget: m.startbudget != null ? Number(m.startbudget) : null,
+    periodiekBudget: m.periodiek_budget != null ? Number(m.periodiek_budget) : null,
+    budgetPeriode: leesBudgetPeriode(m.budget_periode),
+    behoudRestbudget: Boolean(m.behoud_restbudget),
+    productbudget: m.productbudget != null ? Number(m.productbudget) : null,
+    buitenBudgetToegestaan: Boolean(m.buiten_budget_toegestaan),
+    vestigingId: m.vestiging_id,
+  };
+}
+
+/** Zet alle budgetinstellingen van een medewerker in één keer. Alleen beheerder (RLS). */
+export async function zetBudgetInstellingen(
+  id: string,
+  velden: {
+    budget_type: BudgetType;
+    startbudget: number | null;
+    budget: number | null;
+    productbudget: number | null;
+    buiten_budget_toegestaan: boolean;
+    periodiek_budget: number | null;
+    budget_periode: BudgetPeriode;
+    behoud_restbudget: boolean;
+  },
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = await getServerSupabase();
+  if (!sb) return { ok: false, error: 'Portaal niet geconfigureerd' };
+  const { error } = await sb
+    .from('medewerkers')
+    .update({
+      budget_type: velden.budget_type,
+      startbudget: velden.startbudget,
+      budget: velden.budget,
+      productbudget: velden.productbudget,
+      buiten_budget_toegestaan: velden.buiten_budget_toegestaan,
+      periodiek_budget: velden.periodiek_budget,
+      budget_periode: velden.budget_periode,
+      behoud_restbudget: velden.behoud_restbudget,
+    })
+    .eq('id', id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Koppelt een medewerker aan een vestiging (of maakt de koppeling leeg). Alleen beheerder (RLS). */
+export async function zetVestiging(
+  medewerkerId: string,
+  vestigingId: string | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = await getServerSupabase();
+  if (!sb) return { ok: false, error: 'Portaal niet geconfigureerd' };
+  const { error } = await sb.from('medewerkers').update({ vestiging_id: vestigingId }).eq('id', medewerkerId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Lijst van vestigingen van de eigen organisatie. RLS borgt de scope. */
+export async function listVestigingen(): Promise<Vestiging[]> {
+  const sb = await getServerSupabase();
+  if (!sb) return [];
+  const { data } = await sb.from('vestigingen').select('id, naam').order('naam');
+  return ((data as { id: string; naam: string }[]) ?? []).map((v) => ({ id: v.id, naam: v.naam }));
+}
+
+/** Actieve producten met hun beschikbare maten, voor de keuzes bij voorkeursmaten. */
+export async function listProductenVoorMaten(): Promise<ProductMetMaten[]> {
+  const sb = await getServerSupabase();
+  if (!sb) return [];
+  const { data } = await sb
+    .from('producten')
+    .select('id, naam, product_varianten(maat, actief)')
+    .eq('actief', true)
+    .order('naam');
+  const rows =
+    (data as unknown as { id: string; naam: string | null; product_varianten: { maat: string | null; actief: boolean | null }[] }[]) ??
+    [];
+  return rows.map((p) => {
+    const maten = Array.from(
+      new Set(
+        (p.product_varianten ?? [])
+          .filter((v) => v.actief !== false && v.maat)
+          .map((v) => v.maat as string),
+      ),
+    );
+    return { id: p.id, naam: p.naam ?? 'Onbekend product', maten };
+  });
+}
+
+/** Voorkeursmaten van een medewerker (alle producten waarvoor iets is vastgelegd). */
+export async function getVoorkeursmaten(medewerkerId: string): Promise<Voorkeursmaat[]> {
+  const sb = await getServerSupabase();
+  if (!sb) return [];
+  const { data } = await sb
+    .from('medewerker_maten')
+    .select('id, product_id, voorkeursmaat, plus_minus_toegestaan')
+    .eq('medewerker_id', medewerkerId);
+  const rows =
+    (data as { id: string; product_id: string; voorkeursmaat: string | null; plus_minus_toegestaan: boolean | null }[]) ?? [];
+  return rows.map((r) => ({
+    id: r.id,
+    productId: r.product_id,
+    voorkeursmaat: r.voorkeursmaat,
+    plusMinusToegestaan: Boolean(r.plus_minus_toegestaan),
+  }));
+}
+
+/** Slaat de voorkeursmaat voor een product op (upsert op medewerker_id + product_id). Alleen beheerder (RLS). */
+export async function zetVoorkeursmaat(
+  medewerkerId: string,
+  productId: string,
+  voorkeursmaat: string | null,
+  plusMinus: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = await getServerSupabase();
+  if (!sb) return { ok: false, error: 'Portaal niet geconfigureerd' };
+  const { error } = await sb.from('medewerker_maten').upsert(
+    {
+      medewerker_id: medewerkerId,
+      product_id: productId,
+      voorkeursmaat: voorkeursmaat || null,
+      plus_minus_toegestaan: plusMinus,
+    },
+    { onConflict: 'medewerker_id,product_id' },
+  );
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Verwijdert een vastgelegde voorkeursmaat. Alleen beheerder (RLS). */
+export async function verwijderVoorkeursmaat(id: string): Promise<{ ok: boolean; error?: string }> {
+  const sb = await getServerSupabase();
+  if (!sb) return { ok: false, error: 'Portaal niet geconfigureerd' };
+  const { error } = await sb.from('medewerker_maten').delete().eq('id', id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

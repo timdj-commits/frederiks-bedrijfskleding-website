@@ -11,10 +11,21 @@ const effectievePrijs = (verkoopprijs: number | null, meerprijs: number | null) 
 
 type MandItem = { variantId: string; aantal: number };
 
+type Voorkeur = { voorkeursmaat: string | null; plus_minus_toegestaan: boolean };
+
 type Props = {
   producten: WebshopProduct[];
   budgetActief: boolean;
   resterendBudget: number | null;
+  budgetType: 'euro' | 'punten';
+  productbudget: number | null;
+  buitenBudgetToegestaan: boolean;
+  voorkeursmaten: Record<string, Voorkeur>;
+  toonVoorraad: boolean;
+  gebruikReferentienr: boolean;
+  opmerkingBijBestelling: boolean;
+  minBestelbedrag: number | null;
+  maxBestelbedrag: number | null;
   eigenMedewerkerNaam: string | null;
   kiesMedewerker: boolean;
   medewerkers: WebshopMedewerker[];
@@ -23,16 +34,61 @@ type Props = {
 const inputClass =
   'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
 
+/** Toont een budgetbedrag als euro of als punten, afhankelijk van het budget_type. */
+const budgetLabel = (n: number, type: 'euro' | 'punten') =>
+  type === 'punten' ? `${Math.round(n)} punten` : euro(n);
+
+/**
+ * Geeft de toegestane varianten voor een product op basis van de voorkeursmaat.
+ * Als plus/minus is toegestaan: de voorkeursmaat plus één maat groter en kleiner.
+ * Zonder voorkeursmaat: alle varianten.
+ */
+function toegestaneVarianten(p: WebshopProduct, voorkeur: Voorkeur | undefined) {
+  if (!voorkeur || !voorkeur.voorkeursmaat) return p.varianten;
+  const maten = p.varianten.map((v) => v.maat);
+  const idx = maten.findIndex((m) => m === voorkeur.voorkeursmaat);
+  if (idx < 0) return p.varianten;
+  if (!voorkeur.plus_minus_toegestaan) return p.varianten.filter((v) => v.maat === voorkeur.voorkeursmaat);
+  // Eén maat groter of kleiner rond de voorkeursmaat (op volgorde van de variantenlijst).
+  const van = Math.max(0, idx - 1);
+  const tot = Math.min(p.varianten.length - 1, idx + 1);
+  return p.varianten.slice(van, tot + 1);
+}
+
 export default function WebshopClient({
   producten,
   budgetActief,
   resterendBudget,
+  budgetType,
+  productbudget,
+  buitenBudgetToegestaan,
+  voorkeursmaten,
+  toonVoorraad,
+  gebruikReferentienr,
+  opmerkingBijBestelling,
+  minBestelbedrag,
+  maxBestelbedrag,
   eigenMedewerkerNaam,
   kiesMedewerker,
   medewerkers,
 }: Props) {
   const [mand, setMand] = useState<MandItem[]>([]);
-  const [keuze, setKeuze] = useState<Record<string, string>>({});
+
+  // Per product de begin-keuze: de voorkeursmaat-variant als die bestaat, anders de eerste variant.
+  const beginKeuze = useMemo(() => {
+    const k: Record<string, string> = {};
+    for (const p of producten) {
+      const voorkeur = voorkeursmaten[p.id];
+      const toegestaan = toegestaneVarianten(p, voorkeur);
+      const voorkeurVariant = voorkeur?.voorkeursmaat
+        ? toegestaan.find((v) => v.maat === voorkeur.voorkeursmaat)
+        : undefined;
+      k[p.id] = voorkeurVariant?.id ?? toegestaan[0]?.id ?? '';
+    }
+    return k;
+  }, [producten, voorkeursmaten]);
+
+  const [keuze, setKeuze] = useState<Record<string, string>>(beginKeuze);
 
   const variantIndex = useMemo(() => {
     const map = new Map<string, { product: WebshopProduct; variant: WebshopProduct['varianten'][number] }>();
@@ -63,8 +119,15 @@ export default function WebshopClient({
     return sum + item.aantal * effectievePrijs(match.variant.verkoopprijs, match.variant.meerprijs);
   }, 0);
 
-  const overBudget = budgetActief && resterendBudget != null && totaal > resterendBudget;
+  const aantalStuks = mand.reduce((sum, item) => sum + item.aantal, 0);
+
+  const overBudget =
+    budgetActief && !buitenBudgetToegestaan && resterendBudget != null && totaal > resterendBudget;
+  const overProductbudget = productbudget != null && aantalStuks > productbudget;
+  const onderMin = minBestelbedrag != null && mand.length > 0 && totaal < Number(minBestelbedrag);
+  const bovenMax = maxBestelbedrag != null && totaal > Number(maxBestelbedrag);
   const leeg = mand.length === 0;
+  const geblokkeerd = leeg || overBudget || overProductbudget || onderMin || bovenMax;
 
   return (
     <div className="mt-8 grid gap-8 lg:grid-cols-3">
@@ -75,7 +138,10 @@ export default function WebshopClient({
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {producten.map((p) => {
-              const gekozenVariant = keuze[p.id] ?? p.varianten[0]?.id ?? '';
+              const voorkeur = voorkeursmaten[p.id];
+              const opties = toegestaneVarianten(p, voorkeur);
+              const gekozenVariant = keuze[p.id] ?? opties[0]?.id ?? '';
+              const heeftVoorkeur = Boolean(voorkeur?.voorkeursmaat);
               return (
                 <div key={p.id} className="rounded-2xl border border-line bg-white p-6 shadow-soft">
                   <p className="font-bold text-ink-900">{p.naam}</p>
@@ -83,22 +149,38 @@ export default function WebshopClient({
                     {[p.merk, p.categorie].filter(Boolean).join(' · ') || 'Geen details'}
                   </p>
                   {p.omschrijving && <p className="mt-2 text-sm text-warm">{p.omschrijving}</p>}
-                  {p.varianten.length === 0 ? (
+                  {opties.length === 0 ? (
                     <p className="mt-4 text-sm text-warm">Geen leverbare varianten.</p>
                   ) : (
                     <div className="mt-4">
-                      <label className="block text-xs font-semibold text-warm">Maat en kleur</label>
+                      <label className="block text-xs font-semibold text-warm">
+                        Maat en kleur
+                        {heeftVoorkeur && (
+                          <span className="ml-1 font-normal text-amber-700">
+                            (voorkeur: {voorkeur?.voorkeursmaat}
+                            {voorkeur?.plus_minus_toegestaan ? ', één maat groter of kleiner mag' : ''})
+                          </span>
+                        )}
+                      </label>
                       <select
                         value={gekozenVariant}
                         onChange={(e) => setKeuze((k) => ({ ...k, [p.id]: e.target.value }))}
                         className={inputClass}
                       >
-                        {p.varianten.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {[v.maat, v.kleur].filter(Boolean).join(' · ') || 'Standaard'} —{' '}
-                            {euro(effectievePrijs(v.verkoopprijs, v.meerprijs))}
-                          </option>
-                        ))}
+                        {opties.map((v) => {
+                          const uitVoorraad = toonVoorraad && (Number(v.voorraad) || 0) <= 0;
+                          return (
+                            <option key={v.id} value={v.id}>
+                              {[v.maat, v.kleur].filter(Boolean).join(' · ') || 'Standaard'} —{' '}
+                              {euro(effectievePrijs(v.verkoopprijs, v.meerprijs))}
+                              {toonVoorraad
+                                ? uitVoorraad
+                                  ? ' · niet op voorraad'
+                                  : ` · ${Number(v.voorraad) || 0} op voorraad`
+                                : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                       <button
                         type="button"
@@ -122,7 +204,14 @@ export default function WebshopClient({
 
           {budgetActief && resterendBudget != null && (
             <p className="mt-2 text-sm text-warm">
-              Resterend budget: <span className="font-semibold text-ink-900">{euro(resterendBudget)}</span>
+              Resterend budget:{' '}
+              <span className="font-semibold text-ink-900">{budgetLabel(resterendBudget, budgetType)}</span>
+            </p>
+          )}
+          {productbudget != null && (
+            <p className="mt-1 text-sm text-warm">
+              Maximaal aantal stuks per bestelling:{' '}
+              <span className="font-semibold text-ink-900">{productbudget}</span>
             </p>
           )}
 
@@ -173,6 +262,21 @@ export default function WebshopClient({
               Het totaal is hoger dan het resterende budget. Pas de winkelwagen aan om te kunnen bestellen.
             </div>
           )}
+          {overProductbudget && (
+            <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-ink-800">
+              Je hebt {aantalStuks} stuks gekozen, maar maximaal {productbudget} per bestelling is toegestaan.
+            </div>
+          )}
+          {onderMin && (
+            <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-ink-800">
+              Het minimale bestelbedrag is {euro(Number(minBestelbedrag))}. Voeg meer toe aan je winkelwagen.
+            </div>
+          )}
+          {bovenMax && (
+            <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-ink-800">
+              Het maximale bestelbedrag is {euro(Number(maxBestelbedrag))}. Haal iets uit je winkelwagen.
+            </div>
+          )}
 
           <form action={plaatsBestelling} className="mt-4">
             <input type="hidden" name="mand" value={JSON.stringify(mand)} />
@@ -197,14 +301,25 @@ export default function WebshopClient({
               )
             )}
 
-            <div className="mb-3">
-              <label htmlFor="notitie" className="block text-xs font-semibold text-warm">
-                Opmerking (optioneel)
-              </label>
-              <textarea id="notitie" name="notitie" rows={2} className={inputClass} />
-            </div>
+            {gebruikReferentienr && (
+              <div className="mb-3">
+                <label htmlFor="referentienr" className="block text-xs font-semibold text-warm">
+                  Referentienummer
+                </label>
+                <input id="referentienr" name="referentienr" type="text" className={inputClass} />
+              </div>
+            )}
 
-            <button type="submit" disabled={leeg || overBudget} className="btn-primary w-full disabled:opacity-50">
+            {opmerkingBijBestelling && (
+              <div className="mb-3">
+                <label htmlFor="notitie" className="block text-xs font-semibold text-warm">
+                  Opmerking (optioneel)
+                </label>
+                <textarea id="notitie" name="notitie" rows={2} className={inputClass} />
+              </div>
+            )}
+
+            <button type="submit" disabled={geblokkeerd} className="btn-primary w-full disabled:opacity-50">
               Bestelling plaatsen
             </button>
           </form>
