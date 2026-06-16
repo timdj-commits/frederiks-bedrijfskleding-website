@@ -17,7 +17,7 @@ const CSP = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com`,
-  "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com" + (isDev ? ' ws: http://localhost:*' : ''),
+  "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://*.supabase.co" + (isDev ? ' ws: http://localhost:*' : ''),
 ].join('; ');
 
 /** @type {import('next').NextConfig} */

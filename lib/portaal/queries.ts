@@ -59,3 +59,49 @@ export async function maakBestelling(
   if (e2) return { ok: false, error: e2.message };
   return { ok: true };
 }
+
+// --- Fase 2: medewerkers en maten (klantkant, via RLS) ---
+export type Medewerker = { id: string; naam: string; functie: string | null };
+
+export async function getMedewerkers(): Promise<Medewerker[]> {
+  const sb = await getServerSupabase();
+  if (!sb) return [];
+  const { data } = await sb.from('medewerkers').select('id, naam, functie').order('naam');
+  return (data as Medewerker[]) ?? [];
+}
+
+/** Maat per kledinglijn-item voor een medewerker, als map { itemId: maat }. */
+export async function getMatenMap(medewerkerId: string): Promise<Record<string, string>> {
+  const sb = await getServerSupabase();
+  if (!sb) return {};
+  const { data } = await sb.from('maten').select('kledinglijn_item_id, maat').eq('medewerker_id', medewerkerId);
+  const map: Record<string, string> = {};
+  ((data as { kledinglijn_item_id: string; maat: string | null }[]) ?? []).forEach((r) => {
+    if (r.maat) map[r.kledinglijn_item_id] = r.maat;
+  });
+  return map;
+}
+
+export async function maakMedewerker(organisatieId: string, naam: string, functie: string): Promise<boolean> {
+  const sb = await getServerSupabase();
+  if (!sb) return false;
+  const { error } = await sb.from('medewerkers').insert({ organisatie_id: organisatieId, naam, functie: functie || null });
+  return !error;
+}
+
+export async function verwijderMedewerker(id: string): Promise<boolean> {
+  const sb = await getServerSupabase();
+  if (!sb) return false;
+  const { error } = await sb.from('medewerkers').delete().eq('id', id);
+  return !error;
+}
+
+/** Slaat de maat voor een medewerker en kledinglijn-item op (upsert). Lege maat verwijdert niets, slaat leeg op. */
+export async function zetMaat(medewerkerId: string, kledinglijnItemId: string, maat: string): Promise<boolean> {
+  const sb = await getServerSupabase();
+  if (!sb) return false;
+  const { error } = await sb
+    .from('maten')
+    .upsert({ medewerker_id: medewerkerId, kledinglijn_item_id: kledinglijnItemId, maat: maat || null }, { onConflict: 'medewerker_id,kledinglijn_item_id' });
+  return !error;
+}
