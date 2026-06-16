@@ -1,4 +1,5 @@
 import { getServerSupabase } from './supabaseServer';
+import { stuurStatusMail, stuurLeverancierBestelmail } from '@/lib/kms/notificaties';
 
 export type OrderRegel = {
   id: string;
@@ -90,5 +91,9 @@ export async function beslisOverOrder(
     })
     .eq('id', orderId);
   if (error) return { ok: false, error: error.message };
+  // Statusupdate naar de besteller; bij goedkeuring ook de bestelmail naar de leverancier(s).
+  // Best effort: een mislukte mail laat de beslissing nooit falen.
+  await stuurStatusMail(orderId).catch(() => {});
+  if (besluit === 'goedgekeurd') await stuurLeverancierBestelmail(orderId).catch(() => {});
   return { ok: true };
 }

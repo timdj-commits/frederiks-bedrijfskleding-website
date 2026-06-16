@@ -75,6 +75,15 @@ export default async function RapportagesPage() {
         <Link href="/dashboard" className="text-sm font-semibold text-warm hover:text-ink-800">Terug naar dashboard</Link>
       </div>
       <p className="mt-2 text-sm text-warm">Cijfers over omzet, merken, budget, verstrekkingen en verbruik per vestiging, afdeling en functiegroep. Live berekend uit orders en facturen.</p>
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <span className="font-semibold text-warm">Exporteren naar Excel:</span>
+        <a href="/dashboard/rapportages/export?rapport=omzet-klant" className="font-semibold text-amber-700 hover:text-amber-800">Omzet per klant</a>
+        <a href="/dashboard/rapportages/export?rapport=omzet-merk" className="font-semibold text-amber-700 hover:text-amber-800">Omzet per merk</a>
+        <a href="/dashboard/rapportages/export?rapport=budget-medewerker" className="font-semibold text-amber-700 hover:text-amber-800">Budget per medewerker</a>
+        <a href="/dashboard/rapportages/export?rapport=verstrekkingen" className="font-semibold text-amber-700 hover:text-amber-800">Verstrekkingen</a>
+        <a href="/dashboard/rapportages/export?rapport=verbruik-vestiging" className="font-semibold text-amber-700 hover:text-amber-800">Verbruik per vestiging</a>
+        <a href="/dashboard/rapportages/export?rapport=verbruik-afdeling" className="font-semibold text-amber-700 hover:text-amber-800">Verbruik per afdeling</a>
+      </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {kpis.map((k) => (

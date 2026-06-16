@@ -13,6 +13,14 @@ type MandItem = { variantId: string; aantal: number };
 
 type Voorkeur = { voorkeursmaat: string | null; plus_minus_toegestaan: boolean };
 
+type VerstrekkingType = 'budget' | 'periodiek_gratis' | 'altijd_gratis' | 'punten';
+type VerstrekkingInfo = {
+  type: VerstrekkingType;
+  gratisPerPeriode: number | null;
+  periode: string;
+  resterendGratis: number | null;
+};
+
 type Props = {
   producten: WebshopProduct[];
   budgetActief: boolean;
@@ -29,6 +37,7 @@ type Props = {
   eigenMedewerkerNaam: string | null;
   kiesMedewerker: boolean;
   medewerkers: WebshopMedewerker[];
+  verstrekkingen: Record<string, VerstrekkingInfo>;
 };
 
 const inputClass =
@@ -71,6 +80,7 @@ export default function WebshopClient({
   eigenMedewerkerNaam,
   kiesMedewerker,
   medewerkers,
+  verstrekkingen,
 }: Props) {
   const [mand, setMand] = useState<MandItem[]>([]);
 
@@ -121,8 +131,32 @@ export default function WebshopClient({
 
   const aantalStuks = mand.reduce((sum, item) => sum + item.aantal, 0);
 
+  // Budget-relevant deel: altijd-gratis telt niet mee, periodiek-gratis tot de resterende vrije ruimte deze periode.
+  // Spiegelt verdeelVerstrekking op de server zodat het budgetslot in de winkelwagen klopt.
+  const budgetTotaal = useMemo(() => {
+    const restVrij: Record<string, number> = {};
+    let som = 0;
+    for (const item of mand) {
+      const match = variantIndex.get(item.variantId);
+      if (!match) continue;
+      const prijs = effectievePrijs(match.variant.verkoopprijs, match.variant.meerprijs);
+      const info = verstrekkingen[match.product.id];
+      const type = info?.type ?? 'budget';
+      if (type === 'altijd_gratis') continue;
+      if (type === 'periodiek_gratis') {
+        if (!(match.product.id in restVrij)) restVrij[match.product.id] = info?.resterendGratis ?? 0;
+        const gratis = Math.min(item.aantal, restVrij[match.product.id]);
+        restVrij[match.product.id] -= gratis;
+        som += (item.aantal - gratis) * prijs;
+        continue;
+      }
+      som += item.aantal * prijs;
+    }
+    return som;
+  }, [mand, variantIndex, verstrekkingen]);
+
   const overBudget =
-    budgetActief && !buitenBudgetToegestaan && resterendBudget != null && totaal > resterendBudget;
+    budgetActief && !buitenBudgetToegestaan && resterendBudget != null && budgetTotaal > resterendBudget;
   const overProductbudget = productbudget != null && aantalStuks > productbudget;
   const onderMin = minBestelbedrag != null && mand.length > 0 && totaal < Number(minBestelbedrag);
   const bovenMax = maxBestelbedrag != null && totaal > Number(maxBestelbedrag);
@@ -148,6 +182,21 @@ export default function WebshopClient({
                   <p className="mt-1 text-sm text-warm">
                     {[p.merk, p.categorie].filter(Boolean).join(' · ') || 'Geen details'}
                   </p>
+                  {(() => {
+                    const info = verstrekkingen[p.id];
+                    if (!info) return null;
+                    if (info.type === 'altijd_gratis')
+                      return <p className="mt-2 text-xs font-semibold text-green-700">Altijd gratis, telt niet mee in je budget</p>;
+                    if (info.type === 'periodiek_gratis')
+                      return (
+                        <p className="mt-2 text-xs font-semibold text-green-700">
+                          {info.resterendGratis != null && info.resterendGratis > 0
+                            ? `Nog ${info.resterendGratis} gratis deze periode`
+                            : 'Gratis aantal voor deze periode is op'}
+                        </p>
+                      );
+                    return null;
+                  })()}
                   {p.omschrijving && <p className="mt-2 text-sm text-warm">{p.omschrijving}</p>}
                   {opties.length === 0 ? (
                     <p className="mt-4 text-sm text-warm">Geen leverbare varianten.</p>
@@ -256,6 +305,12 @@ export default function WebshopClient({
             <span className="text-sm text-warm">Totaal</span>
             <span className="font-display font-extrabold text-ink-900">{euro(totaal)}</span>
           </div>
+          {budgetActief && budgetTotaal !== totaal && (
+            <div className="mt-1 flex items-center justify-between text-xs text-warm">
+              <span>Telt mee voor je budget</span>
+              <span className="font-semibold text-ink-900">{budgetLabel(budgetTotaal, budgetType)}</span>
+            </div>
+          )}
 
           {overBudget && (
             <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-ink-800">

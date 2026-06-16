@@ -1,0 +1,117 @@
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
+import { listOrganisaties } from '@/lib/kms/functies';
+import { medewerkersImport, productenImport } from './actions';
+
+export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Bulk-import', robots: { index: false, follow: false } };
+
+const inputCls = 'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
+const textareaCls = 'mt-1 w-full rounded-md border border-line px-3 py-2 font-mono text-xs focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
+
+type Zoek = {
+  soort?: string;
+  aangemaakt?: string;
+  overgeslagen?: string;
+  fouten?: string;
+};
+
+export default async function ImportPage({ searchParams }: { searchParams: Promise<Zoek> }) {
+  if (!(await dashAuthed())) redirect('/dashboard');
+  const sb = kmsAdmin();
+
+  if (!sb) {
+    return (
+      <main className="container-x py-20">
+        <div className="mx-auto max-w-xl rounded-2xl border border-line bg-white p-8 shadow-soft">
+          <h1 className="font-display text-2xl font-extrabold text-ink-900">Leaddatabase nog niet gekoppeld</h1>
+          <p className="mt-3 text-sm text-warm">Zet <code>SUPABASE_URL</code> en <code>SUPABASE_SERVICE_ROLE_KEY</code> in de omgevingsvariabelen en draai de migraties in <code>supabase/migrations</code>.</p>
+          <Link href="/dashboard" className="mt-5 inline-block text-sm font-semibold text-warm hover:text-ink-800">Terug naar dashboard</Link>
+        </div>
+      </main>
+    );
+  }
+
+  const { soort, aangemaakt, overgeslagen, fouten } = await searchParams;
+  const orgs = await listOrganisaties();
+  const foutLijst = fouten ? fouten.split('||').filter(Boolean) : [];
+  const heeftResultaat = soort && (aangemaakt !== undefined || overgeslagen !== undefined);
+
+  const resultaatLabel = soort === 'medewerkers' ? 'Medewerkers' : soort === 'producten' ? 'Producten' : '';
+
+  return (
+    <main className="container-x py-12">
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="font-display text-3xl font-extrabold text-ink-900">Bulk-import</h1>
+        <Link href="/dashboard" className="text-sm font-semibold text-warm hover:text-ink-800">Terug naar dashboard</Link>
+      </div>
+      <p className="mt-2 text-sm text-warm">Plak een CSV-lijst om medewerkers of producten in één keer toe te voegen. Scheidingsteken mag puntkomma of komma zijn. De eerste regel zijn de kolomkoppen.</p>
+
+      {heeftResultaat && (
+        <div className="mt-6 rounded-2xl border border-line bg-white p-6 shadow-soft">
+          <h2 className="font-display text-lg font-bold text-ink-900">Resultaat import {resultaatLabel.toLowerCase()}</h2>
+          <p className="mt-2 text-sm text-warm">
+            <span className="font-semibold text-green-800">{aangemaakt ?? 0} aangemaakt</span>
+            {', '}
+            <span className="font-semibold text-ink-700">{overgeslagen ?? 0} overgeslagen</span>
+            {'.'}
+          </p>
+          {foutLijst.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-warm">Meldingen</p>
+              <ul className="mt-1 list-inside list-disc space-y-1 text-xs text-warm">
+                {foutLijst.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+        <div className="rounded-2xl border border-line bg-white p-6 shadow-soft">
+          <h2 className="font-display text-lg font-bold text-ink-900">Medewerkers importeren</h2>
+          <p className="mt-1 text-xs text-warm">Kies eerst de klant. Verwachte kolommen: <code>naam;email;functie;personeelsnummer</code>. De volgorde mag anders, zolang de koppen kloppen. Staat er alleen een naam, dan splitsen we die zelf in voornaam en achternaam.</p>
+          <form action={medewerkersImport} className="mt-4 flex flex-col gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-warm">Klant</label>
+              <select name="organisatie_id" required className={inputCls}>
+                <option value="">Kies een klant</option>
+                {orgs.map((o) => <option key={o.id} value={o.id}>{o.naam}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-warm">CSV plakken</label>
+              <textarea
+                name="csv"
+                required
+                rows={10}
+                placeholder={'naam;email;functie;personeelsnummer\nJan Jansen;jan@bedrijf.nl;Monteur;1001\nPiet de Vries;piet@bedrijf.nl;Voorman;1002'}
+                className={textareaCls}
+              />
+            </div>
+            <button type="submit" className="self-start rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Medewerkers importeren</button>
+          </form>
+        </div>
+
+        <div className="rounded-2xl border border-line bg-white p-6 shadow-soft">
+          <h2 className="font-display text-lg font-bold text-ink-900">Producten importeren</h2>
+          <p className="mt-1 text-xs text-warm">Verwachte kolommen: <code>naam;merk;categorie;sku</code>. Btw staat standaard op 21 procent. De volgorde mag anders, zolang de koppen kloppen.</p>
+          <form action={productenImport} className="mt-4 flex flex-col gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-warm">CSV plakken</label>
+              <textarea
+                name="csv"
+                required
+                rows={10}
+                placeholder={'naam;merk;categorie;sku\nSoftshell jas;Tricorp;Jassen;SS-001\nWerkbroek;Mascot;Broeken;WB-220'}
+                className={textareaCls}
+              />
+            </div>
+            <button type="submit" className="self-start rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Producten importeren</button>
+          </form>
+        </div>
+      </div>
+    </main>
+  );
+}

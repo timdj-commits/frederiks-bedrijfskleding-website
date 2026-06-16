@@ -87,6 +87,7 @@ export default async function KlantPage({ params }: { params: Promise<{ id: stri
         </div>
         <div className="flex items-center gap-4">
           <Link href={`/dashboard/klanten/${id}/structuur`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">Inrichting</Link>
+          <Link href={`/dashboard/klanten/${id}/assortiment`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">Assortiment</Link>
           <Link href="/dashboard/klanten" className="text-sm font-semibold text-warm hover:text-ink-800">Terug naar klanten</Link>
         </div>
       </div>

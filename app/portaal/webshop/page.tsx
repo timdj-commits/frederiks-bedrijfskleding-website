@@ -13,6 +13,9 @@ import {
   getWebshopOrders,
   getVoorkeursmaten,
   getPakketten,
+  getVerstrekkingen,
+  getVerstrektInPeriode,
+  type VerstrekkingType,
 } from '@/lib/portaal/webshop';
 import WebshopClient from './WebshopClient';
 import { bestelPakketActie } from './actions';
@@ -99,6 +102,29 @@ export default async function Webshop({
   if (org.budget_actief && eigenMedewerker && eigenMedewerker.budget != null) {
     const verbruikt = await getBudgetVerbruik(eigenMedewerker.id);
     resterendBudget = Number(eigenMedewerker.budget) - verbruikt;
+  }
+
+  // Verstrekking per artikel voor de webshop: bepaalt welke artikelen (deels) gratis zijn.
+  // Per product de resterende vrije ruimte deze periode, zodat het budgetslot in de winkelwagen klopt.
+  const verstrekkingen = await getVerstrekkingen();
+  const verstrekkingPerProduct: Record<
+    string,
+    { type: VerstrekkingType; gratisPerPeriode: number | null; periode: string; resterendGratis: number | null }
+  > = {};
+  for (const [productId, v] of Object.entries(verstrekkingen)) {
+    let resterendGratis: number | null = null;
+    if (v.verstrekking_type === 'periodiek_gratis') {
+      const limiet = v.gratis_per_periode != null && v.gratis_per_periode >= 0 ? v.gratis_per_periode : 0;
+      let alGehad = 0;
+      if (eigenMedewerker) alGehad = await getVerstrektInPeriode(eigenMedewerker.id, productId, v.periode);
+      resterendGratis = Math.max(0, limiet - alGehad);
+    }
+    verstrekkingPerProduct[productId] = {
+      type: v.verstrekking_type,
+      gratisPerPeriode: v.gratis_per_periode,
+      periode: v.periode,
+      resterendGratis,
+    };
   }
 
   const budgetType = eigenMedewerker?.budget_type ?? 'euro';
@@ -302,6 +328,7 @@ export default async function Webshop({
         eigenMedewerkerNaam={eigenNaam}
         kiesMedewerker={kiesMedewerker}
         medewerkers={medewerkers}
+        verstrekkingen={verstrekkingPerProduct}
       />
 
       <section className="mt-12">

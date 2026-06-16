@@ -6,10 +6,13 @@ import {
   getMijnMedewerker,
   getBudgetVerbruik,
   getWebshopMedewerkers,
+  getVerstrekkingen,
+  getVerstrektInPeriode,
   maakWebshopBestelling,
   bestelPakket,
   type BestelRegelInput,
   type WebshopMedewerker,
+  type Verstrekking,
 } from '@/lib/portaal/webshop';
 import { getServerSupabase } from '@/lib/portaal/supabaseServer';
 
@@ -79,6 +82,21 @@ export async function plaatsBestelling(formData: FormData) {
     verbruikt = await getBudgetVerbruik(medewerkerId);
   }
 
+  // Verstrekking per artikel: altijd gratis en periodiek gratis tellen anders mee in het budget.
+  const verstrekkingen = await getVerstrekkingen();
+  // Tel per periodiek-gratis product hoeveel de medewerker er deze periode al heeft besteld.
+  const reedsVerstrekt: Record<string, number> = {};
+  if (medewerkerId) {
+    const producten = new Map<string, Verstrekking>();
+    for (const r of regels) {
+      const v = verstrekkingen[r.product_id];
+      if (v && v.verstrekking_type === 'periodiek_gratis') producten.set(r.product_id, v);
+    }
+    for (const [productId, v] of producten) {
+      reedsVerstrekt[productId] = await getVerstrektInPeriode(medewerkerId, productId, v.periode);
+    }
+  }
+
   const notitie = String(formData.get('notitie') ?? '').trim();
   const referentienr = String(formData.get('referentienr') ?? '').trim();
   const door = auth.user.email ?? 'onbekend';
@@ -87,6 +105,8 @@ export async function plaatsBestelling(formData: FormData) {
     medewerker,
     verbruikt,
     referentienr,
+    verstrekkingen,
+    reedsVerstrekt,
   });
   if (!res.ok) {
     // res.error bevat een nette reden (budget, productbudget, min/max bedrag); toon die aan de gebruiker.

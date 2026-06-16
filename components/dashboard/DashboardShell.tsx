@@ -35,6 +35,7 @@ const groepen: Groep[] = [
   { titel: 'Inzicht', items: [
     { href: '/dashboard/rapportages', label: 'Rapportages' },
     { href: '/dashboard/meldingen', label: 'Meldingen' },
+    { href: '/dashboard/import', label: 'Import' },
     { href: '/dashboard/export', label: 'Export CSV' },
   ] },
 ];

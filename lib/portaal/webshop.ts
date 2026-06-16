@@ -98,6 +98,18 @@ export type BestelRegelInput = {
   stukprijs: number;
 };
 
+/** Verstrekkingstype per artikel. Bepaalt of een artikel van het budget afgaat of (deels) gratis is. */
+export type VerstrekkingType = 'budget' | 'periodiek_gratis' | 'altijd_gratis' | 'punten';
+export type VerstrekkingPeriode = 'maand' | 'kwartaal' | 'jaar';
+
+/** De verstrekkingsinstelling van één product binnen het assortiment van de eigen organisatie. */
+export type Verstrekking = {
+  product_id: string;
+  verstrekking_type: VerstrekkingType;
+  gratis_per_periode: number | null;
+  periode: VerstrekkingPeriode;
+};
+
 /** De organisatie van de ingelogde gebruiker, met budget- en goedkeurinstellingen. RLS borgt de juiste org. */
 export async function getMijnWebshopOrganisatie(): Promise<WebshopOrg | null> {
   const sb = await getServerSupabase();
@@ -178,6 +190,83 @@ export async function getBudgetVerbruik(medewerkerId: string): Promise<number> {
     .select('bedrag')
     .eq('medewerker_id', medewerkerId);
   return ((data as { bedrag: number | null }[]) ?? []).reduce((sum, r) => sum + (Number(r.bedrag) || 0), 0);
+}
+
+/**
+ * Verstrekkingsinstellingen per product voor de eigen organisatie, als map product_id -> instelling.
+ * RLS borgt dat alleen de eigen assortimentregels meekomen. Ontbreekt een product, dan valt het op 'budget' terug.
+ */
+export async function getVerstrekkingen(): Promise<Record<string, Verstrekking>> {
+  const sb = await getServerSupabase();
+  if (!sb) return {};
+  const { data } = await sb
+    .from('assortiment')
+    .select('product_id, verstrekking_type, gratis_per_periode, periode');
+  const geldigeTypes: VerstrekkingType[] = ['budget', 'periodiek_gratis', 'altijd_gratis', 'punten'];
+  const geldigePeriodes: VerstrekkingPeriode[] = ['maand', 'kwartaal', 'jaar'];
+  const map: Record<string, Verstrekking> = {};
+  ((data as {
+    product_id: string;
+    verstrekking_type: string | null;
+    gratis_per_periode: number | null;
+    periode: string | null;
+  }[]) ?? []).forEach((r) => {
+    const type = geldigeTypes.includes(r.verstrekking_type as VerstrekkingType)
+      ? (r.verstrekking_type as VerstrekkingType)
+      : 'budget';
+    const periode = geldigePeriodes.includes(r.periode as VerstrekkingPeriode)
+      ? (r.periode as VerstrekkingPeriode)
+      : 'jaar';
+    // Eerste regel per product wint; assortiment kan in theorie meerdere regels per product hebben (afdeling/medewerker).
+    if (!map[r.product_id]) {
+      map[r.product_id] = {
+        product_id: r.product_id,
+        verstrekking_type: type,
+        gratis_per_periode: r.gratis_per_periode,
+        periode,
+      };
+    }
+  });
+  return map;
+}
+
+/** Begin van de huidige periode (maand, kwartaal of jaar) als ISO-datum, op basis van vandaag. */
+export function periodeStart(periode: VerstrekkingPeriode, nu: Date = new Date()): Date {
+  const jaar = nu.getFullYear();
+  if (periode === 'maand') return new Date(jaar, nu.getMonth(), 1);
+  if (periode === 'kwartaal') {
+    const kwartaalMaand = Math.floor(nu.getMonth() / 3) * 3;
+    return new Date(jaar, kwartaalMaand, 1);
+  }
+  return new Date(jaar, 0, 1);
+}
+
+/**
+ * Telt hoeveel stuks van een product de medewerker al heeft besteld in de huidige periode.
+ * Telt over orderregels van orders van deze medewerker met een besteldatum vanaf het begin van de periode.
+ * RLS borgt dat alleen de eigen organisatie meekomt. Bij geen medewerker of geen treffers: 0.
+ */
+export async function getVerstrektInPeriode(
+  medewerkerId: string,
+  productId: string,
+  periode: VerstrekkingPeriode,
+): Promise<number> {
+  const sb = await getServerSupabase();
+  if (!sb) return 0;
+  const vanaf = periodeStart(periode).toISOString();
+  const { data: orders } = await sb
+    .from('orders')
+    .select('id')
+    .eq('medewerker_id', medewerkerId)
+    .gte('besteldatum', vanaf);
+  const orderIds = ((orders as { id: string }[]) ?? []).map((o) => o.id);
+  if (orderIds.length === 0) return 0;
+  const { data: regels } = await sb
+    .from('orderregels')
+    .select('aantal')
+    .eq('product_id', productId)
+    .in('order_id', orderIds);
+  return ((regels as { aantal: number | null }[]) ?? []).reduce((sum, r) => sum + (Number(r.aantal) || 0), 0);
 }
 
 /** Voorkeursmaten van een medewerker als map product_id -> { voorkeursmaat, plus_minus_toegestaan }. RLS borgt de scope. */
@@ -263,7 +352,75 @@ export type BestelOpties = {
   verbruikt?: number;
   /** Referentienummer, alleen meegestuurd als de org dit gebruikt. */
   referentienr?: string | null;
+  /** Verstrekking per product (map product_id -> instelling). Bepaalt welk deel van het budget afgaat. */
+  verstrekkingen?: Record<string, Verstrekking>;
+  /** Reeds in de huidige periode verstrekte aantallen per product (map product_id -> aantal). */
+  reedsVerstrekt?: Record<string, number>;
 };
+
+/** Resultaat van de verstrekkingsverdeling: welk deel telt mee voor het budget, en welk deel is gratis. */
+export type VerstrekkingVerdeling = {
+  /** Het totaalbedrag dat van het budget afgaat (na aftrek van gratis verstrekte stuks). */
+  budgetTotaal: number;
+  /** Het totale (echte) bedrag van alle regels, los van verstrekking. */
+  echtTotaal: number;
+  /** Per variant het aantal stuks dat gratis is (altijd gratis of binnen de periodieke vrije ruimte). */
+  gratisPerVariant: Record<string, number>;
+};
+
+/**
+ * Verdeelt de regels in een budget-relevant deel en een gratis deel op basis van de verstrekking per product.
+ * - 'altijd_gratis': het hele artikel gaat niet van het budget af.
+ * - 'periodiek_gratis': gratis tot gratis_per_periode per periode; het meerdere gaat wel van het budget af.
+ *   Reeds bestelde stuks in de periode komen via `reedsVerstrekt` (map product_id -> aantal) binnen.
+ * - 'budget' en 'punten' gedragen zich zoals altijd: het hele bedrag telt mee.
+ * Ontbreekt een instelling voor een product, dan valt het terug op 'budget'.
+ */
+export function verdeelVerstrekking(
+  regels: BestelRegelInput[],
+  verstrekkingen: Record<string, Verstrekking>,
+  reedsVerstrekt: Record<string, number> = {},
+): VerstrekkingVerdeling {
+  const gratisPerVariant: Record<string, number> = {};
+  // Houd per product bij hoeveel vrije ruimte er nog over is binnen deze bestelling.
+  const restVrij: Record<string, number> = {};
+  let budgetTotaal = 0;
+  let echtTotaal = 0;
+
+  for (const r of regels) {
+    const regelBedrag = r.aantal * r.stukprijs;
+    echtTotaal += regelBedrag;
+
+    const v = verstrekkingen[r.product_id];
+    const type: VerstrekkingType = v?.verstrekking_type ?? 'budget';
+
+    if (type === 'altijd_gratis') {
+      gratisPerVariant[r.variant_id] = (gratisPerVariant[r.variant_id] ?? 0) + r.aantal;
+      continue; // Telt niet mee voor het budget.
+    }
+
+    if (type === 'periodiek_gratis') {
+      const limiet = v?.gratis_per_periode != null && v.gratis_per_periode >= 0 ? v.gratis_per_periode : 0;
+      if (!(r.product_id in restVrij)) {
+        const alGehad = Math.max(0, Number(reedsVerstrekt[r.product_id]) || 0);
+        restVrij[r.product_id] = Math.max(0, limiet - alGehad);
+      }
+      const gratisAantal = Math.min(r.aantal, restVrij[r.product_id]);
+      restVrij[r.product_id] -= gratisAantal;
+      if (gratisAantal > 0) {
+        gratisPerVariant[r.variant_id] = (gratisPerVariant[r.variant_id] ?? 0) + gratisAantal;
+      }
+      const betaaldAantal = r.aantal - gratisAantal;
+      budgetTotaal += betaaldAantal * r.stukprijs;
+      continue;
+    }
+
+    // 'budget' en 'punten': volledig meetellen (huidig gedrag).
+    budgetTotaal += regelBedrag;
+  }
+
+  return { budgetTotaal, echtTotaal, gratisPerVariant };
+}
 
 /** Resultaat van een handhavingscheck. ok=false betekent geblokkeerd, met een nette reden. */
 type HandhaafResultaat = { ok: true } | { ok: false; reden: string };
@@ -280,28 +437,32 @@ export function handhaafBestelling(
   org: WebshopOrg,
   totaal: number,
   aantalStuks: number,
-  opts: BestelOpties = {},
+  opts: BestelOpties & { slaMinMaxOver?: boolean; budgetTotaal?: number } = {},
 ): HandhaafResultaat {
-  // Min/max bestelbedrag van de organisatie.
-  if (org.min_bestelbedrag != null && totaal < Number(org.min_bestelbedrag)) {
-    return {
-      ok: false,
-      reden: `Het minimale bestelbedrag is ${euroFmt(Number(org.min_bestelbedrag))}. Voeg meer toe aan je winkelwagen.`,
-    };
-  }
-  if (org.max_bestelbedrag != null && totaal > Number(org.max_bestelbedrag)) {
-    return {
-      ok: false,
-      reden: `Het maximale bestelbedrag is ${euroFmt(Number(org.max_bestelbedrag))}. Haal iets uit je winkelwagen.`,
-    };
+  // Min/max bestelbedrag van de organisatie. Kan overgeslagen worden als de aanroeper dit los doet.
+  if (!opts.slaMinMaxOver) {
+    if (org.min_bestelbedrag != null && totaal < Number(org.min_bestelbedrag)) {
+      return {
+        ok: false,
+        reden: `Het minimale bestelbedrag is ${euroFmt(Number(org.min_bestelbedrag))}. Voeg meer toe aan je winkelwagen.`,
+      };
+    }
+    if (org.max_bestelbedrag != null && totaal > Number(org.max_bestelbedrag)) {
+      return {
+        ok: false,
+        reden: `Het maximale bestelbedrag is ${euroFmt(Number(org.max_bestelbedrag))}. Haal iets uit je winkelwagen.`,
+      };
+    }
   }
 
+  // De budgetcheck draait op het budget-relevante deel (na verstrekking), als dat is meegegeven.
+  const budgetBedrag = opts.budgetTotaal ?? totaal;
   const mw = opts.medewerker;
   if (org.budget_actief && mw) {
     // Budget: blokkeer alleen als buiten budget niet is toegestaan en het totaal het resterende overschrijdt.
     if (mw.budget != null && !mw.buiten_budget_toegestaan) {
       const resterend = Number(mw.budget) - (opts.verbruikt ?? 0);
-      if (totaal > resterend) {
+      if (budgetBedrag > resterend) {
         const label =
           mw.budget_type === 'punten'
             ? `${Math.round(resterend)} punten`
@@ -344,7 +505,16 @@ export async function maakWebshopBestelling(
   const bedrag = regels.reduce((sum, r) => sum + r.aantal * r.stukprijs, 0);
   const aantalStuks = regels.reduce((sum, r) => sum + r.aantal, 0);
 
-  const check = handhaafBestelling(org, bedrag, aantalStuks, opts);
+  // Verstrekking: bepaal welk deel van het bedrag werkelijk van het budget afgaat.
+  // Altijd-gratis artikelen tellen niet mee; periodiek-gratis tot het ingestelde aantal per periode.
+  // Ontbreekt een instelling, dan valt het terug op 'budget' (volledig meetellen).
+  const verdeling = verdeelVerstrekking(regels, opts.verstrekkingen ?? {}, opts.reedsVerstrekt ?? {});
+
+  // Min/max op het echte bedrag, budgetcheck op het budget-relevante deel (na verstrekking).
+  const check = handhaafBestelling(org, bedrag, aantalStuks, {
+    ...opts,
+    budgetTotaal: verdeling.budgetTotaal,
+  });
   if (!check.ok) return { ok: false, error: check.reden };
 
   const goedkeuringStatus = org.goedkeuren_bestellingen ? 'wacht' : 'niet_nodig';

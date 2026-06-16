@@ -1,4 +1,5 @@
 import { kmsAdmin } from '@/lib/kms/adminClient';
+import { stuurStatusMail, stuurLeverancierBestelmail } from '@/lib/kms/notificaties';
 
 /**
  * Data-access voor de module Orders.
@@ -146,7 +147,10 @@ export async function verwijderOrderregel(id: string): Promise<boolean> {
 export async function zetOrderStatus(id: string, status: string): Promise<boolean> {
   const sb = kmsAdmin(); if (!sb) return false;
   const { error } = await sb.from('orders').update({ status }).eq('id', id);
-  return !error;
+  if (error) return false;
+  // Statusupdate naar de besteller (best effort; faalt de mutatie nooit).
+  await stuurStatusMail(id).catch(() => {});
+  return true;
 }
 
 export async function zetGoedkeuring(id: string, status: string, doorWie?: string | null): Promise<boolean> {
@@ -154,7 +158,11 @@ export async function zetGoedkeuring(id: string, status: string, doorWie?: strin
   const patch: { goedkeuring_status: string; goedgekeurd_door?: string | null } = { goedkeuring_status: status };
   if (status === 'goedgekeurd' || status === 'afgewezen') patch.goedgekeurd_door = doorWie ?? null;
   const { error } = await sb.from('orders').update(patch).eq('id', id);
-  return !error;
+  if (error) return false;
+  // Statusupdate naar de besteller; bij goedkeuring ook de bestelmail naar de leverancier(s).
+  await stuurStatusMail(id).catch(() => {});
+  if (status === 'goedgekeurd') await stuurLeverancierBestelmail(id).catch(() => {});
+  return true;
 }
 
 export async function herberekenOrderbedrag(id: string): Promise<number> {
