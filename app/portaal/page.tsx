@@ -59,8 +59,7 @@ export default async function Portaal() {
     <main className="container-x py-12">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-600">Klantportaal</p>
-          <h1 className="font-display text-3xl font-extrabold text-ink-900">{org.naam}</h1>
+          <h1 className="font-display text-2xl font-extrabold text-ink-900">Welkom terug</h1>
           <p className="mt-1 text-sm text-warm">
             Ingelogd als {user.email}
             {toegang.rol ? ` · ${rolLabel[toegang.rol] ?? toegang.rol}` : ''}

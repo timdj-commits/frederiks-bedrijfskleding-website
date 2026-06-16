@@ -1,84 +1,89 @@
 import type { CSSProperties } from 'react';
 import { isPortalConfigured } from '@/lib/env';
-import { getHuisstijl, veiligeKleur, type Huisstijl } from '@/lib/portaal/huisstijl';
+import { getHuisstijl, veiligeKleur } from '@/lib/portaal/huisstijl';
+import { getMijnToegang } from '@/lib/portaal/team';
 
 export const dynamic = 'force-dynamic';
 
+const rolLabel: Record<string, string> = {
+  beheerder: 'Beheerder',
+  leidinggevende: 'Leidinggevende',
+  medewerker: 'Medewerker',
+};
+
+function initialen(naam: string): string {
+  const woorden = naam.trim().split(/\s+/).filter(Boolean);
+  const letters = woorden.slice(0, 2).map((w) => w[0] ?? '').join('');
+  return (letters || naam.slice(0, 2)).toUpperCase();
+}
+
 /**
- * Layout om alle /portaal-pagina's. Geeft de ingelogde klant zijn eigen
- * huisstijl (accentkleur, logo, sfeerbeeld) zonder de bestaande pagina-inhoud
- * te overheersen. Zonder organisatie of huisstijl (login, niet ingelogd,
- * portaal niet geconfigureerd) worden de children gewoon ongewijzigd getoond.
+ * Premium portaalschil: een gebrande kop met het logo en de naam van de klant,
+ * de huisstijlkleur als accent en een rustige mist-achtergrond zodat de witte
+ * kaarten uitkomen. Login en niet-ingelogde pagina's blijven kaal.
  */
 export default async function PortaalLayout({ children }: { children: React.ReactNode }) {
-  let huisstijl: Huisstijl | null = null;
+  if (!isPortalConfigured) return <>{children}</>;
 
-  if (isPortalConfigured) {
-    try {
-      huisstijl = await getHuisstijl();
-    } catch {
-      // Niet ingelogd of geen gekoppelde organisatie: val terug op de gewone weergave.
-      huisstijl = null;
-    }
-  }
+  let naam: string | null = null;
+  let kleur: string | null = null;
+  let logoUrl: string | null = null;
+  let sfeerUrl: string | null = null;
+  try {
+    const h = await getHuisstijl();
+    if (h) { naam = h.naam; kleur = h.kleur; logoUrl = h.logoUrl; sfeerUrl = h.sfeerafbeeldingUrl; }
+  } catch { /* niet ingelogd */ }
 
-  // Geen huisstijl om te tonen: render de children zoals ze zijn (login blijft werken).
-  if (!huisstijl || (!huisstijl.kleur && !huisstijl.logoUrl && !huisstijl.sfeerafbeeldingUrl)) {
-    return <>{children}</>;
-  }
+  // Geen organisatie betekent: login of niet-gekoppeld. Kale weergave.
+  if (!naam) return <>{children}</>;
 
-  const accent = veiligeKleur(huisstijl.kleur);
-  // Zet een CSS-variabele; pagina-inhoud blijft de standaard amber gebruiken,
-  // de variabele kleurt alleen de merkbalk en de banneraccenten van deze layout.
-  const wrapperStyle = { '--portaal-accent': accent } as CSSProperties;
+  let rol: string | null = null;
+  try { rol = (await getMijnToegang()).rol; } catch { /* rol optioneel */ }
 
-  const heeftMerkbalk = Boolean(huisstijl.logoUrl || huisstijl.naam);
+  const accent = veiligeKleur(kleur);
+  const style = { '--portaal-accent': accent } as CSSProperties;
 
   return (
-    <div style={wrapperStyle}>
-      {heeftMerkbalk && (
-        <div
-          className="border-b border-line bg-white"
-          style={{ borderBottomColor: 'color-mix(in srgb, var(--portaal-accent) 35%, #e4e2e0)' }}
-        >
-          <div className="container-x flex items-center gap-3 py-3">
-            {huisstijl.logoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={huisstijl.logoUrl}
-                alt={`Logo ${huisstijl.naam}`}
-                className="h-8 w-auto max-w-[160px] object-contain"
-              />
+    <div style={style} className="min-h-screen bg-mist">
+      <header className="border-b border-line bg-white">
+        <div className="container-x flex items-center justify-between gap-4 py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            {logoUrl ? (
+              <span className="inline-flex items-center rounded-lg border border-line bg-white px-2 py-1 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoUrl} alt={`Logo ${naam}`} className="h-9 w-auto max-w-[150px] object-contain" />
+              </span>
+            ) : (
+              <span
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg font-display text-base font-extrabold text-white"
+                style={{ backgroundColor: 'var(--portaal-accent)' }}
+                aria-hidden="true"
+              >
+                {initialen(naam)}
+              </span>
             )}
-            {huisstijl.naam && (
-              <span className="text-sm font-semibold text-ink-800">{huisstijl.naam}</span>
-            )}
-            <span
-              className="ml-auto hidden h-1.5 w-12 rounded-full sm:block"
-              style={{ backgroundColor: 'var(--portaal-accent)' }}
-              aria-hidden="true"
-            />
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: 'var(--portaal-accent)' }}>Klantportaal</p>
+              <p className="truncate font-display text-lg font-extrabold leading-tight text-ink-900">{naam}</p>
+            </div>
+          </div>
+          <div className="hidden items-center gap-3 sm:flex">
+            {rol && <span className="rounded-full bg-mist px-3 py-1 text-xs font-semibold text-ink-700">{rolLabel[rol] ?? rol}</span>}
+            <span className="text-xs text-warm">Portaal van Frederiks Bedrijfskleding</span>
           </div>
         </div>
-      )}
+        <div className="h-1 w-full" style={{ backgroundColor: 'var(--portaal-accent)' }} aria-hidden="true" />
+      </header>
 
-      {huisstijl.sfeerafbeeldingUrl && (
-        <div className="container-x pt-4">
+      {sfeerUrl && (
+        <div className="container-x pt-5">
           <div
-            className="relative h-28 w-full overflow-hidden rounded-2xl border border-line bg-mist sm:h-36"
-            style={{
-              backgroundImage: `url(${huisstijl.sfeerafbeeldingUrl})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
+            className="relative h-28 w-full overflow-hidden rounded-2xl border border-line bg-white sm:h-40"
+            style={{ backgroundImage: `url(${sfeerUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
             role="img"
-            aria-label={`Sfeerbeeld ${huisstijl.naam}`}
+            aria-label={`Sfeerbeeld ${naam}`}
           >
-            <div
-              className="absolute inset-0"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--portaal-accent) 18%, transparent)' }}
-              aria-hidden="true"
-            />
+            <div className="absolute inset-0" style={{ backgroundColor: 'color-mix(in srgb, var(--portaal-accent) 16%, transparent)' }} aria-hidden="true" />
           </div>
         </div>
       )}

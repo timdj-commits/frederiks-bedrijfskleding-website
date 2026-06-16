@@ -5,21 +5,26 @@ import { Logo } from '@/components/Logo';
 import { branches } from '@/content/branches';
 import { site } from '@/content/site';
 
-// Primaire items in de hoofdbalk
-const primaryNav = [
+// Kledingpagina's gebundeld onder één dropdown zodat de balk overzichtelijk blijft
+const kledingNav = [
   { href: '/werkkleding', label: 'Werkkleding' },
   { href: '/werkschoenen', label: 'Werkschoenen' },
-  { href: '/bedrukken-borduren', label: 'Bedrukken' },
-  { href: '/pakket-samenstellen', label: 'Samenstellen' },
+  { href: '/bedrukken-borduren', label: 'Bedrukken en borduren' },
+  { href: '/pakket-samenstellen', label: 'Pakket samenstellen' },
+];
+// Losse hoofditems
+const hoofdNav = [
   { href: '/kledingbeheer', label: 'Kledingbeheer' },
   { href: '/kennisbank', label: 'Kennisbank' },
   { href: '/referenties', label: 'Referenties' },
 ];
-// Secundaire items in de topbalk
 const topNav = [
   { href: '/over-ons', label: 'Over ons' },
   { href: '/contact', label: 'Contact' },
 ];
+
+const dropdownLink = 'block rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-mist';
+const navTrigger = 'whitespace-nowrap rounded-md px-3 py-2.5 text-[15px] font-semibold text-ink-800 hover:bg-mist';
 
 export function Header() {
   const [open, setOpen] = useState(false);
@@ -44,32 +49,40 @@ export function Header() {
       <header className="sticky top-0 z-40 border-b border-line bg-white">
         <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-6 lg:px-8">
           <Logo />
-          <nav className="hidden min-w-0 items-center xl:flex" aria-label="Hoofdnavigatie">
+          <nav className="hidden min-w-0 items-center gap-1 lg:flex" aria-label="Hoofdnavigatie">
             <div className="group relative">
-              <button className="whitespace-nowrap rounded-md px-3 py-2.5 text-[15px] font-semibold text-ink-800 hover:bg-mist" aria-haspopup="true">
-                Branches
-              </button>
+              <button className={navTrigger} aria-haspopup="true">Branches</button>
               <div className="invisible absolute left-0 top-full w-64 rounded-lg border border-line bg-white p-2 opacity-0 shadow-card transition group-hover:visible group-hover:opacity-100">
                 {branches.map((b) => (
-                  <Link key={b.slug} href={`/branches/${b.slug}`} className="block rounded-md px-3 py-2 text-sm text-ink-700 hover:bg-mist">
-                    {b.navLabel}
-                  </Link>
+                  <Link key={b.slug} href={`/branches/${b.slug}`} className={dropdownLink}>{b.navLabel}</Link>
                 ))}
               </div>
             </div>
-            {primaryNav.map((i) => (
-              <Link key={i.href} href={i.href} className="whitespace-nowrap rounded-md px-3 py-2.5 text-[15px] font-semibold text-ink-800 hover:bg-mist">{i.label}</Link>
+            <div className="group relative">
+              <button className={navTrigger} aria-haspopup="true">Kleding</button>
+              <div className="invisible absolute left-0 top-full w-60 rounded-lg border border-line bg-white p-2 opacity-0 shadow-card transition group-hover:visible group-hover:opacity-100">
+                {kledingNav.map((i) => (
+                  <Link key={i.href} href={i.href} className={dropdownLink}>{i.label}</Link>
+                ))}
+              </div>
+            </div>
+            {hoofdNav.map((i) => (
+              <Link key={i.href} href={i.href} className={navTrigger}>{i.label}</Link>
             ))}
           </nav>
-          <Link href="/kledingadvies" className="btn-primary hidden shrink-0 whitespace-nowrap px-5 py-2.5 text-[13px] xl:inline-flex">Vraag advies aan</Link>
-          <button className="shrink-0 rounded-md px-3 py-2.5 text-[15px] font-bold text-ink-900 hover:bg-mist xl:hidden" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Menu">
+          <Link href="/kledingadvies" className="btn-primary hidden shrink-0 whitespace-nowrap px-5 py-2.5 text-[13px] lg:inline-flex">Vraag advies aan</Link>
+          <button className="shrink-0 rounded-md px-3 py-2.5 text-[15px] font-bold text-ink-900 hover:bg-mist lg:hidden" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Menu">
             Menu
           </button>
         </div>
         {open && (
-          <div className="border-t border-line bg-white xl:hidden">
+          <div className="border-t border-line bg-white lg:hidden">
             <nav className="mx-auto flex w-full max-w-7xl flex-col gap-1 px-5 py-4 sm:px-6 lg:px-8" aria-label="Mobiele navigatie">
-              {primaryNav.map((i) => (
+              <p className="px-3 pt-1 text-xs font-bold uppercase tracking-wide text-warm">Kleding</p>
+              {kledingNav.map((i) => (
+                <Link key={i.href} href={i.href} className="rounded-md px-3 py-2.5 text-[15px] text-ink-800 hover:bg-mist" onClick={() => setOpen(false)}>{i.label}</Link>
+              ))}
+              {hoofdNav.map((i) => (
                 <Link key={i.href} href={i.href} className="rounded-md px-3 py-2.5 text-[15px] text-ink-800 hover:bg-mist" onClick={() => setOpen(false)}>{i.label}</Link>
               ))}
               {topNav.map((i) => (
