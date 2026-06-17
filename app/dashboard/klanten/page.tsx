@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { env, isLeadsDbConfigured } from '@/lib/env';
 import { listOrganisaties } from '@/lib/portaalAdmin';
+import { kmsAdmin } from '@/lib/kms/adminClient';
 import { nieuweOrganisatie } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,18 @@ async function authed() {
 function fmt(d: string) {
   try { return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' }); }
   catch { return d; }
+}
+
+/** Aantal medewerkers per organisatie, in één query opgehaald en geteld. */
+async function medewerkersPerOrg(): Promise<Record<string, number>> {
+  const sb = kmsAdmin();
+  if (!sb) return {};
+  const { data } = await sb.from('medewerkers').select('organisatie_id');
+  const map: Record<string, number> = {};
+  ((data as { organisatie_id: string | null }[]) ?? []).forEach((r) => {
+    if (r.organisatie_id) map[r.organisatie_id] = (map[r.organisatie_id] ?? 0) + 1;
+  });
+  return map;
 }
 
 export default async function KlantenPage() {
@@ -34,6 +47,7 @@ export default async function KlantenPage() {
   }
 
   const orgs = await listOrganisaties();
+  const aantalPerOrg = await medewerkersPerOrg();
 
   return (
     <main className="container-x py-12">
@@ -54,7 +68,8 @@ export default async function KlantenPage() {
                   <tr>
                     <th className="px-4 py-3">Naam</th>
                     <th className="px-4 py-3">Plaats</th>
-                    <th className="px-4 py-3">Aangemaakt</th>
+                    <th className="px-4 py-3">Medewerkers</th>
+                    <th className="hidden px-4 py-3 sm:table-cell">Aangemaakt</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -64,7 +79,8 @@ export default async function KlantenPage() {
                         <Link href={`/dashboard/klanten/${o.id}`} className="font-semibold text-amber-700 hover:text-amber-800">{o.naam}</Link>
                       </td>
                       <td className="px-4 py-3 text-warm">{o.plaats || '-'}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-warm">{fmt(o.created_at)}</td>
+                      <td className="px-4 py-3 text-warm">{aantalPerOrg[o.id] ?? 0}</td>
+                      <td className="hidden whitespace-nowrap px-4 py-3 text-warm sm:table-cell">{fmt(o.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>

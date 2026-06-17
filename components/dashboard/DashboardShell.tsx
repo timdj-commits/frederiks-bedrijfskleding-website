@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { logout } from '@/app/dashboard/actions';
+import CommandPalette from './CommandPalette';
 
 type Item = { href: string; label: string };
 type Groep = { titel: string; items: Item[] };
@@ -49,6 +50,18 @@ function isActief(pathname: string, href: string) {
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const nav = (
     <nav className="flex h-full flex-col gap-6 overflow-y-auto p-5">
@@ -56,6 +69,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <p className="font-display text-lg font-extrabold tracking-tight text-white">FREDERIKS</p>
         <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-amber-500">KMS</p>
       </div>
+      <button
+        type="button"
+        onClick={() => { setOpen(false); setSearchOpen(true); }}
+        className="flex items-center justify-between rounded-md border border-ink-700 px-3 py-2 text-sm text-ink-300 hover:bg-ink-800"
+      >
+        <span>Zoeken…</span>
+        <kbd className="rounded bg-ink-800 px-1.5 py-0.5 text-[10px] font-semibold text-ink-200">⌘K</kbd>
+      </button>
       <div className="flex flex-col gap-5">
         {groepen.map((g) => (
           <div key={g.titel}>
@@ -98,6 +119,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       )}
       <aside className="hidden w-60 shrink-0 bg-ink-900 md:block">{nav}</aside>
       <main className="min-w-0 flex-1">{children}</main>
+      <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }
