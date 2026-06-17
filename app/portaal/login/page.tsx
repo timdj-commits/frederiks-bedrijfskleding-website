@@ -34,7 +34,10 @@ export default function PortaalLogin() {
         <h1 className="font-display text-2xl font-extrabold text-ink-900">Klantportaal</h1>
         <p className="mt-2 text-sm text-warm">Log in met je e-mailadres. Je ontvangt een inloglink in je mailbox.</p>
         {sent ? (
-          <p className="mt-5 rounded-md bg-green-100 px-3 py-3 text-sm font-medium text-green-800">Check je mailbox. We hebben je een inloglink gestuurd naar {email}.</p>
+          <div className="mt-5 rounded-md bg-green-100 px-4 py-3 text-sm text-green-800">
+            <p className="font-semibold">Check je mailbox.</p>
+            <p className="mt-1">We hebben een inloglink gestuurd naar <span className="break-all font-medium">{email}</span>.</p>
+          </div>
         ) : (
           <form onSubmit={submit} className="mt-5">
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="naam@bedrijf.nl" autoComplete="email"
