@@ -1,7 +1,8 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { dashAuthed } from '@/lib/kms/adminClient';
-import { werkProduct as werkProductDb, zetProductActief, maakVariant, werkVariant as werkVariantDb, verwijderVariant as verwijderVariantDb } from '@/lib/kms/producten';
+import { uploadMedia } from '@/lib/kms/storage';
+import { getProduct, werkProduct as werkProductDb, zetProductActief, maakVariant, werkVariant as werkVariantDb, verwijderVariant as verwijderVariantDb } from '@/lib/kms/producten';
 
 function getalOfNull(raw: string): number | null {
   const s = String(raw ?? '').replace(/[^0-9.,-]/g, '').replace(',', '.');
@@ -18,6 +19,8 @@ export async function werkProduct(formData: FormData) {
   const naam = String(formData.get('naam') ?? '').trim();
   if (!id || !naam) redirect('/dashboard/producten');
   const afbeeldingen = formData.getAll('afbeelding').map((a) => String(a).trim()).filter(Boolean);
+  const geupload = await uploadMedia(formData.get('afbeelding_bestand') as File | null, 'producten');
+  if (geupload) afbeeldingen.push(geupload);
   await werkProductDb(id, {
     naam,
     omschrijving: String(formData.get('omschrijving') ?? '').trim() || null,
@@ -39,6 +42,19 @@ export async function werkProduct(formData: FormData) {
     leverancier_id: String(formData.get('leverancier_id') ?? '').trim() || null,
     afbeeldingen,
   });
+  redirect('/dashboard/producten/' + id);
+}
+
+export async function verwijderAfbeelding(formData: FormData) {
+  if (!(await dashAuthed())) redirect('/dashboard');
+  const id = String(formData.get('productId') ?? '');
+  const url = String(formData.get('url') ?? '').trim();
+  if (!id || !url) redirect('/dashboard/producten/' + id);
+  const product = await getProduct(id);
+  if (product) {
+    const afbeeldingen = (product.afbeeldingen ?? []).filter((a) => a !== url);
+    await werkProductDb(id, { naam: product.naam, afbeeldingen });
+  }
   redirect('/dashboard/producten/' + id);
 }
 

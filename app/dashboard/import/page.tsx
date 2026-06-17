@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { listOrganisaties } from '@/lib/kms/functies';
-import { medewerkersImport, productenImport } from './actions';
+import { medewerkersImport, productenImport, productenLijstImport } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Bulk-import', robots: { index: false, follow: false } };
@@ -15,6 +15,8 @@ type Zoek = {
   aangemaakt?: string;
   overgeslagen?: string;
   fouten?: string;
+  prod_hergebruikt?: string;
+  varianten?: string;
 };
 
 export default async function ImportPage({ searchParams }: { searchParams: Promise<Zoek> }) {
@@ -33,12 +35,13 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
     );
   }
 
-  const { soort, aangemaakt, overgeslagen, fouten } = await searchParams;
+  const { soort, aangemaakt, overgeslagen, fouten, prod_hergebruikt, varianten } = await searchParams;
   const orgs = await listOrganisaties();
   const foutLijst = fouten ? fouten.split('||').filter(Boolean) : [];
   const heeftResultaat = soort && (aangemaakt !== undefined || overgeslagen !== undefined);
+  const isLijst = soort === 'lijst';
 
-  const resultaatLabel = soort === 'medewerkers' ? 'Medewerkers' : soort === 'producten' ? 'Producten' : '';
+  const resultaatLabel = soort === 'medewerkers' ? 'Medewerkers' : soort === 'producten' ? 'Producten' : soort === 'lijst' ? 'Productenlijst' : '';
 
   return (
     <main className="container-x py-12">
@@ -51,12 +54,25 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
       {heeftResultaat && (
         <div className="mt-6 rounded-2xl border border-line bg-white p-6 shadow-soft">
           <h2 className="font-display text-lg font-bold text-ink-900">Resultaat import {resultaatLabel.toLowerCase()}</h2>
-          <p className="mt-2 text-sm text-warm">
-            <span className="font-semibold text-green-800">{aangemaakt ?? 0} aangemaakt</span>
-            {', '}
-            <span className="font-semibold text-ink-700">{overgeslagen ?? 0} overgeslagen</span>
-            {'.'}
-          </p>
+          {isLijst ? (
+            <p className="mt-2 text-sm text-warm">
+              <span className="font-semibold text-green-800">{aangemaakt ?? 0} producten aangemaakt</span>
+              {', '}
+              <span className="font-semibold text-ink-700">{prod_hergebruikt ?? 0} bestaande producten aangevuld</span>
+              {', '}
+              <span className="font-semibold text-green-800">{varianten ?? 0} varianten toegevoegd</span>
+              {', '}
+              <span className="font-semibold text-ink-700">{overgeslagen ?? 0} regels overgeslagen</span>
+              {'.'}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-warm">
+              <span className="font-semibold text-green-800">{aangemaakt ?? 0} aangemaakt</span>
+              {', '}
+              <span className="font-semibold text-ink-700">{overgeslagen ?? 0} overgeslagen</span>
+              {'.'}
+            </p>
+          )}
           {foutLijst.length > 0 && (
             <div className="mt-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-warm">Meldingen</p>
@@ -111,6 +127,38 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
             <button type="submit" className="self-start rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Producten importeren</button>
           </form>
         </div>
+      </div>
+
+      <div className="mt-8 rounded-2xl border border-line bg-white p-6 shadow-soft">
+        <h2 className="font-display text-lg font-bold text-ink-900">Productenlijst importeren (CSV)</h2>
+        <p className="mt-1 text-xs text-warm">
+          Voor leverancierslijsten zoals die van FHB, geexporteerd uit Odoo. Elke regel is een variant (een maat) van een artikel. We groeperen per <code>Artikelnr.</code> zodat een artikel een product wordt met meerdere varianten. Exporteer de Excel eerst naar CSV en plak die hieronder, of upload het bestand.
+        </p>
+        <p className="mt-2 text-xs text-warm">
+          Herkende kolommen: <code>Interne referentie, Merk, Artikelnr., Naam, Variant waardes, Verkoopprijs ex btw, Inkoopprijs ex btw, Basis Kleur, Barcode, Productcategorie, Btw Inkoop, Btw Verkoop, Omschrijving, Afbeelding, Voorraad</code>. De volgorde mag anders, zolang de koppen kloppen. Scheidingsteken mag puntkomma of komma zijn.
+        </p>
+        <form action={productenLijstImport} className="mt-4 flex flex-col gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-warm">CSV plakken</label>
+            <textarea
+              name="csv"
+              rows={10}
+              placeholder={'Interne referentie;Merk;Artikelnr.;Naam;Variant waardes;Verkoopprijs ex btw;Inkoopprijs ex btw;Basis Kleur;Barcode;Productcategorie;Btw Verkoop;Omschrijving;Voorraad'}
+              className={textareaCls}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm">Of upload een CSV-bestand</label>
+            <input
+              type="file"
+              name="bestand"
+              accept=".csv,text/csv"
+              className="mt-1 block w-full text-sm text-warm file:mr-3 file:rounded-md file:border-0 file:bg-mist file:px-3 file:py-2 file:text-sm file:font-semibold file:text-ink-800 hover:file:bg-ink-100"
+            />
+            <p className="mt-1 text-xs text-warm">Als beide gevuld zijn, gebruiken we het tekstveld.</p>
+          </div>
+          <button type="submit" className="self-start rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Productenlijst importeren</button>
+        </form>
       </div>
     </main>
   );

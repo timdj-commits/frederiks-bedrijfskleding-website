@@ -22,6 +22,8 @@ export const metadata = { title: 'Inrichting', robots: { index: false, follow: f
 
 const inputCls =
   'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
+const fileCls =
+  'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-mist file:px-3 file:py-1 file:text-xs file:font-semibold file:text-ink-700 hover:file:bg-line focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
 const knopCls = 'rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800';
 const wisCls = 'rounded-md border border-line px-2.5 py-1 text-xs font-semibold text-ink-700 hover:bg-mist';
 
@@ -150,8 +152,13 @@ export default async function InrichtingPage({ params }: { params: Promise<{ id:
           </div>
           <div></div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-warm">Portaal-logo URL</label>
-            <input name="portaal_logo_url" defaultValue={inst.portaal_logo_url ?? ''} placeholder="https://..." className={inputCls} />
+            <label className="block text-xs font-semibold text-warm">Portaal-logo</label>
+            {inst.portaal_logo_url && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={inst.portaal_logo_url} alt="Portaal-logo" className="mt-1 max-h-20 w-auto rounded-md border border-line bg-white object-contain p-2" />
+            )}
+            <input type="file" name="portaal_logo_bestand" accept="image/*" className={fileCls} />
+            <input name="portaal_logo_url" defaultValue={inst.portaal_logo_url ?? ''} placeholder="of plak een URL" className={`${inputCls} mt-2`} />
           </div>
           <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-warm">Sfeerafbeelding URL</label>

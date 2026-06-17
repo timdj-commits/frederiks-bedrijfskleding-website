@@ -1,6 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { dashAuthed } from '@/lib/kms/adminClient';
+import { uploadMedia } from '@/lib/kms/storage';
 import {
   werkInstellingen,
   maakVestiging,
@@ -27,6 +28,8 @@ export async function bewaarInstellingen(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
   const id = String(formData.get('orgId') ?? '');
   if (id) {
+    const logoUpload = await uploadMedia(formData.get('portaal_logo_bestand') as File | null, 'huisstijl');
+    const portaal_logo_url = logoUpload ?? (String(formData.get('portaal_logo_url') ?? '').trim() || null);
     await werkInstellingen(id, {
       type: String(formData.get('type') ?? '').trim() || null,
       min_bestelbedrag: getal(formData, 'min_bestelbedrag'),
@@ -41,7 +44,7 @@ export async function bewaarInstellingen(formData: FormData) {
       voorwaarden_tekst: String(formData.get('voorwaarden_tekst') ?? '').trim() || null,
       voorschriften_tekst: String(formData.get('voorschriften_tekst') ?? '').trim() || null,
       huisstijl_kleur: String(formData.get('huisstijl_kleur') ?? '').trim() || null,
-      portaal_logo_url: String(formData.get('portaal_logo_url') ?? '').trim() || null,
+      portaal_logo_url,
       sfeerafbeelding_url: String(formData.get('sfeerafbeelding_url') ?? '').trim() || null,
     });
   }

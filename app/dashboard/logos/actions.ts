@@ -2,15 +2,19 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { dashAuthed } from '@/lib/kms/adminClient';
+import { uploadMedia } from '@/lib/kms/storage';
 import { maakLogo, verwijderLogo } from '@/lib/kms/logos';
 
 export async function nieuwLogo(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
   const orgId = String(formData.get('orgId') ?? '').trim();
   const naam = String(formData.get('naam') ?? '').trim();
-  const logo_bestand_url = String(formData.get('logo_bestand_url') ?? '').trim() || null;
-  const vectorbestand_url = String(formData.get('vectorbestand_url') ?? '').trim() || null;
-  const borduurbestand_url = String(formData.get('borduurbestand_url') ?? '').trim() || null;
+  const logoUpload = await uploadMedia(formData.get('logo_bestand') as File | null, 'logos');
+  const vectorUpload = await uploadMedia(formData.get('vectorbestand') as File | null, 'logos');
+  const borduurUpload = await uploadMedia(formData.get('borduurbestand') as File | null, 'logos');
+  const logo_bestand_url = logoUpload ?? (String(formData.get('logo_bestand_url') ?? '').trim() || null);
+  const vectorbestand_url = vectorUpload ?? (String(formData.get('vectorbestand_url') ?? '').trim() || null);
+  const borduurbestand_url = borduurUpload ?? (String(formData.get('borduurbestand_url') ?? '').trim() || null);
   const opmerkingen = String(formData.get('opmerkingen') ?? '').trim() || null;
   if (orgId && naam) {
     await maakLogo(orgId, { naam, logo_bestand_url, vectorbestand_url, borduurbestand_url, opmerkingen });

@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Logobibliotheek', robots: { index: false, follow: false } };
 
 const inputCls = 'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
+const fileCls = 'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-mist file:px-3 file:py-1 file:text-xs file:font-semibold file:text-ink-700 hover:file:bg-line focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
 
 function bestandLink(label: string, url: string | null) {
   if (!url) return null;
@@ -99,7 +100,7 @@ export default async function LogosPage({ searchParams }: { searchParams: Promis
 
           <div className="rounded-2xl border border-line bg-white p-6 shadow-soft">
             <h2 className="font-display text-lg font-bold text-ink-900">Nieuw logo</h2>
-            <p className="mt-1 text-xs text-warm">Plak de URL&apos;s van de bestanden. Uploaden komt later; voor nu verwijs je naar de opslag.</p>
+            <p className="mt-1 text-xs text-warm">Upload de bestanden, of plak een URL als alternatief.</p>
             <form action={nieuwLogo} className="mt-4 flex flex-col gap-3">
               <input type="hidden" name="orgId" value={gekozen} />
               <div>
@@ -107,16 +108,19 @@ export default async function LogosPage({ searchParams }: { searchParams: Promis
                 <input name="naam" required placeholder="Bijv. Bedrijfslogo borst" className={inputCls} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-warm">Logo-bestand (URL)</label>
-                <input name="logo_bestand_url" placeholder="https://..." className={inputCls} />
+                <label className="block text-xs font-semibold text-warm">Logo-bestand</label>
+                <input type="file" name="logo_bestand" accept="image/*" className={fileCls} />
+                <input name="logo_bestand_url" placeholder="of plak een URL" className={`${inputCls} mt-2`} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-warm">Vectorbestand (URL)</label>
-                <input name="vectorbestand_url" placeholder="https://..." className={inputCls} />
+                <label className="block text-xs font-semibold text-warm">Vectorbestand</label>
+                <input type="file" name="vectorbestand" accept="image/*" className={fileCls} />
+                <input name="vectorbestand_url" placeholder="of plak een URL" className={`${inputCls} mt-2`} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-warm">Borduurbestand (URL)</label>
-                <input name="borduurbestand_url" placeholder="https://..." className={inputCls} />
+                <label className="block text-xs font-semibold text-warm">Borduurbestand</label>
+                <input type="file" name="borduurbestand" accept="image/*" className={fileCls} />
+                <input name="borduurbestand_url" placeholder="of plak een URL" className={`${inputCls} mt-2`} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-warm">Opmerkingen</label>

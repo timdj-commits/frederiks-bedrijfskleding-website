@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { getProduct, listVarianten, listLeveranciers } from '@/lib/kms/producten';
-import { werkProduct, schakelActief, voegVariantToe, werkVariant, verwijderVariant } from './actions';
+import { werkProduct, verwijderAfbeelding, schakelActief, voegVariantToe, werkVariant, verwijderVariant } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Product', robots: { index: false, follow: false } };
 
 const euro = (n: number) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(n || 0);
 const inputCls = 'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
+const fileCls = 'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-mist file:px-3 file:py-1 file:text-xs file:font-semibold file:text-ink-700 hover:file:bg-line focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
@@ -62,6 +63,25 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           <button type="submit" className="rounded-md border border-line px-2.5 py-1 text-xs font-semibold text-ink-700 hover:bg-mist">{product.actief ? 'Op inactief zetten' : 'Op actief zetten'}</button>
         </form>
       </div>
+
+      {afbeeldingen.length > 0 && (
+        <section className="mt-8">
+          <h2 className="font-display text-xl font-bold text-ink-900">Afbeeldingen</h2>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {afbeeldingen.map((url) => (
+              <div key={url} className="flex w-40 flex-col gap-2 rounded-xl border border-line bg-white p-2 shadow-soft">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="Productafbeelding" className="max-h-32 w-full rounded-md border border-line bg-white object-contain" />
+                <form action={verwijderAfbeelding}>
+                  <input type="hidden" name="productId" value={id} />
+                  <input type="hidden" name="url" value={url} />
+                  <button type="submit" className="w-full rounded-md border border-line px-2 py-1 text-xs font-semibold text-red-700 hover:bg-mist">Verwijderen</button>
+                </form>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mt-8">
         <h2 className="font-display text-xl font-bold text-ink-900">Gegevens</h2>
@@ -129,6 +149,11 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               <option value="">Geen leverancier</option>
               {leveranciers.map((l) => <option key={l.id} value={l.id}>{l.naam}</option>)}
             </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-warm">Afbeelding uploaden</label>
+            <p className="mt-1 text-xs text-warm">Kies een bestand. Bij opslaan wordt het aan de afbeeldingen toegevoegd.</p>
+            <input type="file" name="afbeelding_bestand" accept="image/*" className={fileCls} />
           </div>
           <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-warm">Afbeeldingen (URL per veld)</label>
