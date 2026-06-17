@@ -218,3 +218,105 @@ export async function kerncijfersAnalyse(): Promise<KerncijfersAnalyse> {
     omzet: omzetGroei,
   };
 }
+
+export type TopProduct = { naam: string; stuks: number; omzet: number };
+
+/** Best verkochte producten op stuks, uit orderregels van geplaatste orders (geen concept/offerte/geannuleerd). */
+export async function topProducten(limit = 8): Promise<TopProduct[]> {
+  const sb = kmsAdmin();
+  if (!sb) return [];
+  const { data: ordersData } = await sb.from('orders').select('id, status');
+  const geldig = new Set(
+    ((ordersData as { id: string; status: string }[]) ?? [])
+      .filter((o) => !['concept', 'geannuleerd', 'offerte_verstuurd'].includes(o.status))
+      .map((o) => o.id),
+  );
+  if (geldig.size === 0) return [];
+  const { data: regels } = await sb
+    .from('orderregels')
+    .select('order_id, product_id, item_naam, aantal, stukprijs');
+  const perProduct = new Map<string, TopProduct>();
+  (
+    (regels as {
+      order_id: string;
+      product_id: string | null;
+      item_naam: string | null;
+      aantal: number | null;
+      stukprijs: number | null;
+    }[]) ?? []
+  ).forEach((r) => {
+    if (!geldig.has(r.order_id)) return;
+    const key = r.product_id ?? r.item_naam ?? 'onbekend';
+    const huidig = perProduct.get(key) ?? { naam: r.item_naam ?? 'Onbekend', stuks: 0, omzet: 0 };
+    huidig.stuks += Number(r.aantal) || 0;
+    huidig.omzet += (Number(r.aantal) || 0) * (Number(r.stukprijs) || 0);
+    perProduct.set(key, huidig);
+  });
+  return [...perProduct.values()].sort((a, b) => b.stuks - a.stuks).slice(0, limit);
+}
+
+export type Voorraadwaarde = {
+  stuks: number;
+  inkoopwaarde: number;
+  verkoopwaarde: number;
+  margePotentieel: number;
+};
+
+/** Voorraadwaarde: voorraad × inkoop- en verkoopprijs over alle varianten, plus potentiële marge. */
+export async function voorraadwaarde(): Promise<Voorraadwaarde> {
+  const sb = kmsAdmin();
+  if (!sb) return { stuks: 0, inkoopwaarde: 0, verkoopwaarde: 0, margePotentieel: 0 };
+  const { data } = await sb.from('product_varianten').select('voorraad, inkoopprijs, verkoopprijs');
+  let stuks = 0;
+  let inkoopwaarde = 0;
+  let verkoopwaarde = 0;
+  ((data as { voorraad: number | null; inkoopprijs: number | null; verkoopprijs: number | null }[]) ?? []).forEach((v) => {
+    const aantal = Number(v.voorraad) || 0;
+    if (aantal <= 0) return;
+    stuks += aantal;
+    inkoopwaarde += aantal * (Number(v.inkoopprijs) || 0);
+    verkoopwaarde += aantal * (Number(v.verkoopprijs) || 0);
+  });
+  return { stuks, inkoopwaarde, verkoopwaarde, margePotentieel: verkoopwaarde - inkoopwaarde };
+}
+
+export type LeadConversie = {
+  totaal: number;
+  nieuw: number;
+  offerte: number;
+  gewonnen: number;
+  verloren: number;
+  conversiePct: number | null; // gewonnen / (gewonnen + verloren)
+  gewonnenWaarde: number;
+};
+
+/** Leadconversie: verdeling over statussen en het conversiepercentage van afgehandelde leads. */
+export async function leadConversie(): Promise<LeadConversie> {
+  const sb = kmsAdmin();
+  if (!sb) return { totaal: 0, nieuw: 0, offerte: 0, gewonnen: 0, verloren: 0, conversiePct: null, gewonnenWaarde: 0 };
+  const { data } = await sb.from('leads').select('status, offertewaarde');
+  const leads = (data as { status: string; offertewaarde: number | null }[]) ?? [];
+  let nieuw = 0;
+  let offerte = 0;
+  let gewonnen = 0;
+  let verloren = 0;
+  let gewonnenWaarde = 0;
+  leads.forEach((l) => {
+    if (l.status === 'nieuw') nieuw += 1;
+    else if (l.status === 'offerte') offerte += 1;
+    else if (l.status === 'geaccordeerd') {
+      gewonnen += 1;
+      gewonnenWaarde += Number(l.offertewaarde) || 0;
+    } else if (l.status === 'afgewezen') verloren += 1;
+  });
+  const afgehandeld = gewonnen + verloren;
+  return {
+    totaal: leads.length,
+    nieuw,
+    offerte,
+    gewonnen,
+    verloren,
+    conversiePct: afgehandeld > 0 ? (gewonnen / afgehandeld) * 100 : null,
+    gewonnenWaarde,
+  };
+}
