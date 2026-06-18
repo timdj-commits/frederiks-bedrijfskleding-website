@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { listOrders, ORDER_STATUSSEN } from '@/lib/kms/orders';
+import NavigateSelect from '@/components/dashboard/NavigateSelect';
 import { nieuweOrder } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -65,17 +66,20 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       </div>
       <p className="mt-2 text-sm text-warm">Alle orders met hun status en goedkeuring. Klik op een ordernummer om de regels te beheren.</p>
 
-      <form method="get" className="mt-6 flex flex-wrap items-end gap-3">
+      <div className="mt-6 flex flex-wrap items-end gap-3">
         <div>
           <label className="block text-xs font-semibold text-warm">Status</label>
-          <select name="status" defaultValue={status ?? ''} className={inputCls}>
-            <option value="">Alle statussen</option>
-            {ORDER_STATUSSEN.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
-          </select>
+          <NavigateSelect
+            basePath="/dashboard/orders"
+            param="status"
+            value={status ?? ''}
+            placeholder="Alle statussen"
+            className={inputCls}
+            options={ORDER_STATUSSEN.map((s) => ({ value: s, label: s.replace(/_/g, ' ') }))}
+          />
         </div>
-        <button type="submit" className="rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Filteren</button>
         {status && <Link href="/dashboard/orders" className="text-sm font-semibold text-warm hover:text-ink-800">Wissen</Link>}
-      </form>
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

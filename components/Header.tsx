@@ -67,7 +67,17 @@ export function Header() {
               </div>
             </div>
             {hoofdNav.map((i) => (
-              <Link key={i.href} href={i.href} className={navTrigger}>{i.label}</Link>
+              <Link
+                key={i.href}
+                href={i.href}
+                className={
+                  i.href === '/kledingbeheer'
+                    ? 'whitespace-nowrap rounded-md px-3 py-2.5 text-[15px] font-bold text-amber-700 hover:bg-mist'
+                    : navTrigger
+                }
+              >
+                {i.label}
+              </Link>
             ))}
           </nav>
           <Link href="/kledingadvies" className="btn-primary hidden shrink-0 whitespace-nowrap px-5 py-2.5 text-[13px] lg:inline-flex">Vraag advies aan</Link>

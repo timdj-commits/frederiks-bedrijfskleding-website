@@ -28,6 +28,11 @@ export function Hero() {
             <a href={`tel:${site.phoneIntl}`} className="btn border-2 border-white/30 text-white hover:border-white/70">Bel {site.phone}</a>
             <Link href="/pakket-samenstellen" className="btn border-2 border-amber-500/60 text-amber-200 hover:border-amber-400 hover:text-amber-100">Stel je pakket samen</Link>
           </div>
+          <p className="mt-4 text-sm text-ink-200">
+            <span className="font-semibold text-amber-300">Inbegrepen:</span> je eigen{' '}
+            <Link href="/kledingbeheer" className="font-semibold text-white underline decoration-amber-500 underline-offset-2 hover:text-amber-200">online kledingbeheer</Link>{' '}
+            — gratis bij je bedrijfskleding.
+          </p>
           <dl className="mt-10 grid max-w-md grid-cols-3 gap-4 border-t border-white/10 pt-6">
             {stats.map((s) => (
               <div key={s.label}>

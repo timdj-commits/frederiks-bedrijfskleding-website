@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { listFacturen, listOrganisaties, listFactureerbareOrders, FACTUUR_STATUSSEN } from '@/lib/kms/facturen';
+import NavigateSelect from '@/components/dashboard/NavigateSelect';
 import { factuurVanOrder, legeFactuur } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -53,17 +54,20 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
       </div>
       <p className="mt-2 text-sm text-warm">Alle facturen met hun status. Klik op een factuurnummer om de regels te beheren en de factuur af te drukken.</p>
 
-      <form method="get" className="mt-6 flex flex-wrap items-end gap-3">
+      <div className="mt-6 flex flex-wrap items-end gap-3">
         <div>
           <label className="block text-xs font-semibold text-warm">Status</label>
-          <select name="status" defaultValue={status ?? ''} className={inputCls}>
-            <option value="">Alle statussen</option>
-            {FACTUUR_STATUSSEN.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <NavigateSelect
+            basePath="/dashboard/facturen"
+            param="status"
+            value={status ?? ''}
+            placeholder="Alle statussen"
+            className={inputCls}
+            options={FACTUUR_STATUSSEN.map((s) => ({ value: s, label: s }))}
+          />
         </div>
-        <button type="submit" className="rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Filteren</button>
         {status && <Link href="/dashboard/facturen" className="text-sm font-semibold text-warm hover:text-ink-800">Wissen</Link>}
-      </form>
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

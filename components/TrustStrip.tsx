@@ -6,6 +6,7 @@ export function TrustStrip() {
     `${site.rating.value.toFixed(1)} uit 5 sterren`,
     'Passen op locatie',
     'Eigen bedrukkerij',
+    'Gratis online kledingbeheer',
     'Binnen 1 werkdag reactie',
   ];
   return (
