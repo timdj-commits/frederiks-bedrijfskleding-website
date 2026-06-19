@@ -18,6 +18,7 @@ import {
   getKleurAfbeeldingen,
   type VerstrekkingType,
 } from '@/lib/portaal/webshop';
+import { getFavorieten } from '@/lib/portaal/favorieten';
 import WebshopClient from './WebshopClient';
 import { bestelPakketActie } from './actions';
 
@@ -136,6 +137,8 @@ export default async function Webshop({
   const eigenNaam =
     eigenMedewerker?.naam ??
     ([eigenMedewerker?.voornaam, eigenMedewerker?.achternaam].filter(Boolean).join(' ') || null);
+
+  const favorieten = await getFavorieten(org.id);
 
   const startpakketten = pakketten.filter((p) => p.soort === 'start');
   const regulierePakketten = pakketten.filter((p) => p.soort === 'regulier');
@@ -333,6 +336,7 @@ export default async function Webshop({
         verstrekkingen={verstrekkingPerProduct}
         kortingPct={org.korting_pct}
         kleurAfbeeldingen={kleurAfbeeldingen}
+        favorieten={favorieten}
       />
 
       <section className="mt-12">

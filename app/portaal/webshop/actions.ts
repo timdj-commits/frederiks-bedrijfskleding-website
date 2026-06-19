@@ -1,5 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+import { toggleFavoriet } from '@/lib/portaal/favorieten';
 import {
   getMijnWebshopOrganisatie,
   getAssortiment,
@@ -151,4 +153,16 @@ export async function bestelPakketActie(formData: FormData) {
   }
 
   redirect('/portaal/webshop?pakketok=1');
+}
+
+/** Zet een product aan/uit als favoriet voor de eigen organisatie. Geen redirect: blijf op de pagina. */
+export async function toggleFavorietActie(formData: FormData) {
+  const org = await getMijnWebshopOrganisatie();
+  if (!org) return;
+
+  const productId = String(formData.get('product_id') ?? '').trim();
+  if (!productId) return;
+
+  await toggleFavoriet(org.id, productId);
+  revalidatePath('/portaal/webshop');
 }

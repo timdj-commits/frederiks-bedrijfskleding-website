@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { plaatsBestelling } from './actions';
+import { plaatsBestelling, toggleFavorietActie } from './actions';
 import type { WebshopProduct, WebshopMedewerker } from '@/lib/portaal/webshop';
 
 const euro = (n: number) =>
@@ -47,6 +47,7 @@ type Props = {
   verstrekkingen: Record<string, VerstrekkingInfo>;
   kortingPct: number | null;
   kleurAfbeeldingen: Record<string, Record<string, string>>;
+  favorieten: string[];
 };
 
 const inputClass =
@@ -92,8 +93,10 @@ export default function WebshopClient({
   verstrekkingen,
   kortingPct,
   kleurAfbeeldingen,
+  favorieten,
 }: Props) {
   const [mand, setMand] = useState<MandItem[]>([]);
+  const favorietenSet = new Set(favorieten);
 
   // Klantkorting van de organisatie; leeg of 0 betekent gewoon de lijstprijs.
   const korting = Number(kortingPct) || 0;
@@ -203,7 +206,20 @@ export default function WebshopClient({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={kleurImg} alt={p.naam} className="mb-3 h-32 w-full rounded-lg border border-line bg-mist object-contain" />
                   )}
-                  <p className="font-bold text-ink-900">{p.naam}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-bold text-ink-900">{p.naam}</p>
+                    <form action={toggleFavorietActie} className="shrink-0">
+                      <input type="hidden" name="product_id" value={p.id} />
+                      <button
+                        type="submit"
+                        aria-label="Favoriet"
+                        title="Favoriet"
+                        className={`text-lg leading-none ${favorietenSet.has(p.id) ? 'text-amber-500' : 'text-warm hover:text-amber-500'}`}
+                      >
+                        {favorietenSet.has(p.id) ? '♥' : '♡'}
+                      </button>
+                    </form>
+                  </div>
                   <p className="mt-1 text-sm text-warm">
                     {[p.merk, p.categorie].filter(Boolean).join(' · ') || 'Geen details'}
                   </p>

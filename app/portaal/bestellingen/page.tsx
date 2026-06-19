@@ -6,6 +6,7 @@ import { getPortaalUser, getMijnOrganisatie } from '@/lib/portaal/queries';
 import { getMijnToegang } from '@/lib/portaal/team';
 import { getMijnOrders, leesbareStatus, leesbareGoedkeuring } from '@/lib/portaal/orders';
 import PortaalNav from '../PortaalNav';
+import { herbestelActie } from './actions';
 
 export const metadata: Metadata = { title: 'Mijn bestellingen', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ function StatusBadge({ status }: { status: string | null }) {
   return <span className={`inline-block rounded-full border px-3 py-1 text-xs font-semibold ${toon}`}>{label}</span>;
 }
 
-export default async function Bestellingen({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+export default async function Bestellingen({ searchParams }: { searchParams: Promise<{ ok?: string; herbesteld?: string; fout?: string }> }) {
   if (!isPortalConfigured) {
     return (
       <main className="container-x py-20">
@@ -70,6 +71,18 @@ export default async function Bestellingen({ searchParams }: { searchParams: Pro
       {sp?.ok && (
         <div className="mt-6 rounded-xl border border-green-300 bg-green-50 p-4 text-sm text-green-800">
           Je bestelling is geplaatst. Je vindt hem hieronder terug.
+        </div>
+      )}
+
+      {sp?.herbesteld && (
+        <div className="mt-6 rounded-xl border border-green-300 bg-green-50 p-4 text-sm text-green-800">
+          Je bestelling is opnieuw geplaatst.
+        </div>
+      )}
+
+      {sp?.fout && (
+        <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-700">
+          {sp.fout}
         </div>
       )}
 
@@ -128,6 +141,13 @@ export default async function Bestellingen({ searchParams }: { searchParams: Pro
                   {o.vervoerder && <p><span className="font-semibold">Vervoerder:</span> {o.vervoerder}</p>}
                   {o.track_trace_code && <p className="mt-1"><span className="font-semibold">Track en trace:</span> {o.track_trace_code}</p>}
                 </div>
+              )}
+
+              {o.regels.length > 0 && (
+                <form action={herbestelActie} className="mt-5 border-t border-line pt-4">
+                  <input type="hidden" name="order_id" value={o.id} />
+                  <button type="submit" className="btn-secondary">Bestel opnieuw</button>
+                </form>
               )}
             </div>
           ))}
