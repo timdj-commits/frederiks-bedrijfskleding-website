@@ -5,7 +5,7 @@ const dayMap: Record<string, string> = {
   Mo: 'Monday', Tu: 'Tuesday', We: 'Wednesday', Th: 'Thursday', Fr: 'Friday',
 };
 
-/** LocalBusiness / ClothingStore schema — basis voor lokale SEO en AI-antwoorden. */
+/** LocalBusiness / ClothingStore schema, basis voor lokale SEO en AI-antwoorden. */
 export function localBusinessJsonLd() {
   return {
     '@context': 'https://schema.org',
@@ -43,7 +43,7 @@ export function localBusinessJsonLd() {
   };
 }
 
-/** FAQPage schema — wint klassieke SEO én AI-overzichten (Q&A wordt geciteerd). */
+/** FAQPage schema, wint klassieke SEO én AI-overzichten (Q&A wordt geciteerd). */
 export function faqJsonLd(faqs: { q: string; a: string }[]) {
   return {
     '@context': 'https://schema.org',

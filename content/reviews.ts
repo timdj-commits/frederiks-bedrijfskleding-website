@@ -1,4 +1,4 @@
-/** Klantreviews — overgenomen van de huidige site. Social proof + schema.org. */
+/** Klantreviews, overgenomen van de huidige site. Social proof + schema.org. */
 export type Review = { author: string; text: string; rating: number };
 
 export const reviews: Review[] = [

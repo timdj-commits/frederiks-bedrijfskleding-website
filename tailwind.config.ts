@@ -1,11 +1,11 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * Huisstijl Frederiks Bedrijfskleding — afgeleid van het logo.
+ * Huisstijl Frederiks Bedrijfskleding: afgeleid van het logo.
  *   - Houtskool / antraciet  (wordmark "FREDERIKS", emblemen, footer, tekst)
  *   - Oranje                 (accent uit het logo: knoppen, links, CTA's)
  *   - Neutrale grijzen       (vlakken, lijnen, achtergronden)
- * Geen blauw — de huisstijl is charcoal + oranje.
+ * Geen blauw: de huisstijl is charcoal + oranje.
  */
 const config: Config = {
   content: [

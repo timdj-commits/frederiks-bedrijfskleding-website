@@ -4,7 +4,7 @@ import { env, isAiConfigured } from '@/lib/env';
  * Dunne AI-laag bovenop de Anthropic (Claude) Messages API.
  * Env-gated: zonder ANTHROPIC_API_KEY doet dit niets (geeft een nette fout terug
  * in plaats van te crashen). ALLEEN server-side gebruiken (deze module wordt
- * alleen aangeroepen vanuit een 'use server' action) — de key mag NOOIT naar
+ * alleen aangeroepen vanuit een 'use server' action). De key mag NOOIT naar
  * de client lekken.
  */
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 type Optie = { value: string; label: string };
 
 /**
- * Dropdown die meteen navigeert bij een keuze — geen aparte "Tonen"-knop nodig.
+ * Dropdown die meteen navigeert bij een keuze, geen aparte "Tonen"-knop nodig.
  * Navigeert naar `${basePath}?${param}=<waarde>` (of `basePath` bij lege keuze).
  */
 export default function NavigateSelect({

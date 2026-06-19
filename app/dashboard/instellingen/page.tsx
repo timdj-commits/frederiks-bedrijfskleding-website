@@ -79,7 +79,7 @@ export default async function InstellingenPage({
           </form>
         </div>
 
-        {/* Spaarsysteem — beheer staat op de eigen Sparen-pagina */}
+        {/* Spaarsysteem, beheer staat op de eigen Sparen-pagina */}
         <div className="rounded-2xl border border-line bg-white p-6 shadow-soft lg:col-span-2">
           <h2 className="font-display text-lg font-bold text-ink-900">Spaarsysteem</h2>
           <p className="mt-1 text-xs text-warm">Het spaarsysteem beheer je onder Sparen: punten per euro, kortingswaarde en de saldi per bedrijf.</p>

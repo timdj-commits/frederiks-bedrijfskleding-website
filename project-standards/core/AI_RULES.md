@@ -26,13 +26,13 @@ Veilig werken met AI coding agents. AI versnelt, maar introduceert eigen risico'
 ## Als je product zélf een LLM gebruikt
 De regels hierboven gaan over coding agents. Roept het product zelf een LLM aan (chatbot, RAG, agent)? Dan komt de **OWASP Top 10 voor LLM-applicaties (2025)** erbij. De vier die je het eerst aanpakt:
 
-- **LLM01 — Prompt injection**: behandel alle externe/opgehaalde content als data, niet als instructie. Scheid systeem- en user-rollen, beperk de tools die het model mag aanroepen (least privilege), human-in-the-loop bij impactvolle acties. Test RAG/agent-flows met red-teaming.
-- **LLM02 — Gevoelige info-disclosure**: dataminimalisatie in prompts, PII-scrubbing, toegangscontrole op RAG-bronnen. Geen secrets in de system-prompt (ga ervan uit dat die uitlekt).
-- **LLM05 — Onjuiste output-afhandeling**: geef ruwe LLM-output **nooit** ongevalideerd door aan SQL, shell, eval of HTML. Behandel als onvertrouwde user-input → valideer, encodeer, parameteriseer.
-- **LLM10 — Unbounded consumption (denial-of-wallet)**: rate-limits + quota per user/key, max-token/lengte-caps, timeouts, en **kosten-alerting**. Een forged request of runaway loop mag geen €€€/dag kosten.
+- **LLM01, prompt injection**: behandel alle externe/opgehaalde content als data, niet als instructie. Scheid systeem- en user-rollen, beperk de tools die het model mag aanroepen (least privilege), human-in-the-loop bij impactvolle acties. Test RAG/agent-flows met red-teaming.
+- **LLM02, gevoelige info-disclosure**: dataminimalisatie in prompts, PII-scrubbing, toegangscontrole op RAG-bronnen. Geen secrets in de system-prompt (ga ervan uit dat die uitlekt).
+- **LLM05, onjuiste output-afhandeling**: geef ruwe LLM-output **nooit** ongevalideerd door aan SQL, shell, eval of HTML. Behandel als onvertrouwde user-input → valideer, encodeer, parameteriseer.
+- **LLM10, unbounded consumption (denial-of-wallet)**: rate-limits + quota per user/key, max-token/lengte-caps, timeouts, en **kosten-alerting**. Een forged request of runaway loop mag geen €€€/dag kosten.
 
 **PII naar de provider:** de LLM-provider is doorgaans een **verwerker** → verwerkersovereenkomst (zie data/AVG.md), EU-regio waar mogelijk, training-op-input uitzetten. Minimaliseer wat je in prompts stuurt.
 
 **EU AI Act art. 50 (transparantie):** gebruik je een externe LLM, dan ben je doorgaans deployer.
 - Informeer gebruikers dat ze met een AI-systeem praten (tenzij overduidelijk); label AI-gegenereerde content. Toepassing vanaf **2 augustus 2026**.
-- De machineleesbare markering van synthetische content kent een **provisionele** uitsteltermijn (~2 dec 2026, Digital Omnibus) — nog niet definitief, bevestig de finale tekst. De informeren-/deepfake-plichten zijn niet uitgesteld.
+- De machineleesbare markering van synthetische content kent een **provisionele** uitsteltermijn (~2 dec 2026, Digital Omnibus), nog niet definitief, dus bevestig de finale tekst. De informeren-/deepfake-plichten zijn niet uitgesteld.

@@ -45,7 +45,7 @@ type SendArgs = { to: string; subject: string; html: string; replyTo?: string };
 
 /**
  * Verstuurt e-mail via Resend. Zonder RESEND_API_KEY wordt er niets verstuurd
- * (en faalt de flow niet) — handig voor preview/lokaal.
+ * (en faalt de flow niet), handig voor preview/lokaal.
  */
 export async function sendEmail({ to, subject, html, replyTo }: SendArgs): Promise<{ sent: boolean }> {
   if (!isEmailConfigured) return { sent: false };

@@ -1,4 +1,4 @@
-# Project Standards — Orkest & Trigger-systeem
+# Project Standards: Orkest & Trigger-systeem
 
 Eén map die je in elk project zet. Subfolders per risico-tier. Je activeert per project alleen wat nodig is. Een brochure-site gebruikt alleen `core/`, je zorgsoftware de volledige set.
 
@@ -47,17 +47,17 @@ project-standards/
 
 ---
 
-## Tier-selector — bepaal bij projectstart
+## Tier-selector: bepaal bij projectstart
 
-**TIER 1 — Brochure/MKB-site.** Geen login, hooguit contactformulier.
+**TIER 1, Brochure/MKB-site.** Geen login, hooguit contactformulier.
 → gebruik: `core/`
 → voorbeeld: Dierenkliniek Coenen, Optiek Jansen, Eres
 
-**TIER 2 — App met login.** Klantdata, CRM, facturatie, portaal.
+**TIER 2, App met login.** Klantdata, CRM, facturatie, portaal.
 → gebruik: `core/` + `data/`
 → voorbeeld: JMGT-portaal, klantportalen, leadmanagement
 
-**TIER 3 — Medische/bijzondere persoonsgegevens of multi-tenant SaaS.**
+**TIER 3, Medische/bijzondere persoonsgegevens of multi-tenant SaaS.**
 → gebruik: `core/` + `data/` + `zorg/`
 → voorbeeld: EetIdee zorgsoftware, afspraaksysteem met behandelgegevens
 

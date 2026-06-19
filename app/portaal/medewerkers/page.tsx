@@ -186,7 +186,7 @@ export default async function Medewerkers({
           </form>
         )}
 
-        {/* Toegang — alleen voor de beheerder */}
+        {/* Toegang, alleen voor de beheerder */}
         {magToegang && (
           <div className="mt-4 border-t border-line pt-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-warm">Toegang tot het portaal</p>

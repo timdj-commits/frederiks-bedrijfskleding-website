@@ -30,7 +30,7 @@ Voor Tier 2+ projecten die gebruikersdata opslaan.
 - **Rotatiebeleid:** vaste cadans + directe rotatie bij elk vermoeden van blootstelling. Niet committen alléén is niet genoeg.
 - Aparte secrets per omgeving (dev/preview/prod).
 
-## Threat modeling — STRIDE (kort, per significante feature)
+## Threat modeling: STRIDE (kort, per significante feature)
 Loop bij een nieuwe feature de zes categorieën langs en noteer dreiging + maatregel:
 - **S**poofing → authenticatie · **T**ampering → integriteit · **R**epudiation → logging/audit-trail
 - **I**nformation disclosure → autorisatie/encryptie · **D**enial of service → rate-limit/quota · **E**levation of privilege → RBAC/RLS

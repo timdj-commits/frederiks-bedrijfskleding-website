@@ -15,7 +15,7 @@ const inputCls = 'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm fo
 /**
  * Eén pagina klanten met server-side zoekfilter op naam, plaats en contactpersoon.
  * `listOrganisatiesPaged` (lib/portaalAdmin) kent geen zoekparameter en mag in deze
- * opdracht niet gewijzigd worden, daarom draaien we hier — bij een zoekterm — een
+ * opdracht niet gewijzigd worden, daarom draaien we hier, bij een zoekterm, een
  * gelijkwaardige gepagineerde + getelde query via de reeds beschikbare kmsAdmin-client.
  * Zonder zoekterm valt de pagina terug op de bestaande helper, zodat het gedrag
  * identiek blijft. Filteren en pagineren gebeuren beide server-side in de query.

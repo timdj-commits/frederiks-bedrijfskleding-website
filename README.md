@@ -1,4 +1,4 @@
-# Frederiks Bedrijfskleding — website
+# Frederiks Bedrijfskleding: website
 
 Vernieuwde website met leadgeneratie voor Frederiks Bedrijfskleding (Hengelo Gld).
 **Tier 1** brochure + leadgen. Stack: Next.js 15 + Tailwind 3 + Resend + Zod, gehost op Vercel.
@@ -16,10 +16,10 @@ De site draait ook zonder ingevulde env-vars; het formulier verstuurt dan
 geen e-mail (handig voor preview).
 
 ## Scripts
-- `npm run dev` — ontwikkelserver
-- `npm run build` / `npm start` — productiebuild
-- `npm run typecheck` — TypeScript
-- `npm run lint` — ESLint (next)
+- `npm run dev`: ontwikkelserver
+- `npm run build` / `npm start`: productiebuild
+- `npm run typecheck`: TypeScript
+- `npm run lint`: ESLint (next)
 
 ## Structuur
 ```
@@ -30,7 +30,7 @@ app/                routes (App Router)
 components/         herbruikbare UI (Hero, LeadForm, Reviews, CtaBand, ...)
 content/            single source of truth: site, branches, plaatsen, reviews
 lib/                env, email (Resend), ratelimit, jsonld
-project-standards/  het "orkest" — security/SEO/UX/AVG-standaarden
+project-standards/  het "orkest": security/SEO/UX/AVG-standaarden
 ```
 
 ## Inhoud aanpassen (zonder code)

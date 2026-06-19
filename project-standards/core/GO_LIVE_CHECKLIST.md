@@ -24,7 +24,7 @@ De hele standaarden-set beantwoordt uiteindelijk één vraag: **"Kunnen we naar 
 - [ ] Supabase RLS actief op alle data-tabellen
 - [ ] Auth-flows getest (login, reset, logout, sessie)
 - [ ] Autorisatie server-side gecontroleerd (geen IDOR)
-- [ ] Rate limiting op publieke API-routes ÉN op login/admin (per-IP, 429 + Retry-After). Login zónder eigen limiter = brute-force-risico — vertrouw niet blind op de Supabase-default. In-memory limiter (Map per instance) werkt NIET betrouwbaar op serverless/edge → gebruik gedeelde state (Supabase-RPC / Upstash / Vercel KV) en zorg dat de limiter *fail-closed* is
+- [ ] Rate limiting op publieke API-routes ÉN op login/admin (per-IP, 429 + Retry-After). Login zónder eigen limiter = brute-force-risico. Vertrouw niet blind op de Supabase-default. In-memory limiter (Map per instance) werkt NIET betrouwbaar op serverless/edge → gebruik gedeelde state (Supabase-RPC / Upstash / Vercel KV) en zorg dat de limiter *fail-closed* is
 - [ ] Inputvalidatie met Zod
 - [ ] Backup + restore getest
 - [ ] AVG: bewaartermijnen, verwijder/exportproces, verwerkersovereenkomsten
@@ -41,7 +41,7 @@ De hele standaarden-set beantwoordt uiteindelijk één vraag: **"Kunnen we naar 
 
 ## Eindoordeel: GO / GO-MITS / NO-GO
 
-Vul dit verdict in en geef het als slotregel. Een FAIL is geen schande — daar is de checklist voor.
+Vul dit verdict in en geef het als slotregel. Een FAIL is geen schande. Daar is de checklist voor.
 
 | Veld | Invullen |
 |---|---|
