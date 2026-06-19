@@ -5,6 +5,7 @@ import { getProduct, listVarianten, listLeveranciers } from '@/lib/kms/producten
 import { getKleurenVanProduct, listKleurAfbeeldingen } from '@/lib/kms/afbeeldingen';
 import { werkProduct, verwijderAfbeelding, schakelActief, voegVariantToe, werkVariant, verwijderVariant, zetKleurAfbeeldingActie, verwijderKleurAfbeeldingActie } from './actions';
 import ConfirmSubmit from '@/components/ConfirmSubmit';
+import AiBeschrijving from './AiBeschrijving';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Product', robots: { index: false, follow: false } };
@@ -147,6 +148,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <label className="block text-xs font-semibold text-warm">Omschrijving</label>
             <textarea name="omschrijving" defaultValue={product.omschrijving ?? ''} rows={3} className={inputCls} />
           </div>
+          <AiBeschrijving
+            naam={product.naam ?? ''}
+            merk={product.merk ?? ''}
+            categorie={product.categorie ?? ''}
+            materiaal={product.materiaal ?? ''}
+            normeringen={product.normeringen ?? ''}
+          />
           <div>
             <label className="block text-xs font-semibold text-warm">SKU</label>
             <input name="sku" defaultValue={product.sku ?? ''} className={inputCls} />

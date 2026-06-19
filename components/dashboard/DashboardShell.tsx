@@ -12,6 +12,7 @@ const groepen: Groep[] = [
   { titel: 'Overzicht', items: [
     { href: '/dashboard', label: 'Overzicht' },
     { href: '/dashboard/leads', label: 'Leads' },
+    { href: '/dashboard/taken', label: 'Taken' },
   ] },
   { titel: 'Verkoop', items: [
     { href: '/dashboard/klanten', label: 'Klanten' },

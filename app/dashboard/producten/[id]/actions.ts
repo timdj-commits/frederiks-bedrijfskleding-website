@@ -4,6 +4,7 @@ import { dashAuthed } from '@/lib/kms/adminClient';
 import { uploadMedia } from '@/lib/kms/storage';
 import { getProduct, werkProduct as werkProductDb, zetProductActief, maakVariant, werkVariant as werkVariantDb, verwijderVariant as verwijderVariantDb } from '@/lib/kms/producten';
 import { zetKleurAfbeelding, verwijderKleurAfbeelding } from '@/lib/kms/afbeeldingen';
+import { aiTekst } from '@/lib/ai';
 
 function getalOfNull(raw: string): number | null {
   const s = String(raw ?? '').replace(/[^0-9.,-]/g, '').replace(',', '.');
@@ -125,4 +126,39 @@ export async function verwijderKleurAfbeeldingActie(formData: FormData) {
   const kleur = String(formData.get('kleur') ?? '').trim();
   if (id && kleur) await verwijderKleurAfbeelding(id, kleur);
   redirect('/dashboard/producten/' + id);
+}
+
+/**
+ * Genereert met de bestaande AI-laag (Claude) een korte productbeschrijving op
+ * basis van de productvelden. Vorm is geschikt voor useActionState. Geen redirect:
+ * het resultaat wordt teruggegeven zodat de beheerder het zelf kan plakken.
+ * De AI-key blijft volledig server-side.
+ */
+export async function genereerBeschrijvingActie(
+  _prev: { tekst?: string; error?: string } | null,
+  formData: FormData,
+): Promise<{ tekst?: string; error?: string }> {
+  if (!(await dashAuthed())) return { error: 'Geen toegang.' };
+
+  const naam = String(formData.get('naam') ?? '').trim();
+  const merk = String(formData.get('merk') ?? '').trim();
+  const categorie = String(formData.get('categorie') ?? '').trim();
+  const materiaal = String(formData.get('materiaal') ?? '').trim();
+  const normeringen = String(formData.get('normeringen') ?? '').trim();
+
+  const opdracht =
+    'Schrijf een korte, wervende maar zakelijke productbeschrijving (2-3 zinnen) ' +
+    'voor dit werkkledingartikel: ' +
+    `naam=${naam || 'onbekend'}, ` +
+    `merk=${merk || 'onbekend'}, ` +
+    `categorie=${categorie || 'onbekend'}, ` +
+    `materiaal=${materiaal || 'onbekend'}, ` +
+    `normeringen=${normeringen || 'geen'}. ` +
+    'Schrijf in het Nederlands, concreet, geen overdreven verkooptaal.';
+
+  const resultaat = await aiTekst(opdracht);
+  if (!resultaat.ok) {
+    return { error: resultaat.error ?? 'Er ging iets mis bij het genereren.' };
+  }
+  return { tekst: resultaat.tekst };
 }
