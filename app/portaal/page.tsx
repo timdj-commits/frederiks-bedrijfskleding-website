@@ -5,6 +5,8 @@ import { isPortalConfigured } from '@/lib/env';
 import { getPortaalUser, getMijnOrganisatie, getKledinglijn } from '@/lib/portaal/queries';
 import { getMijnToegang } from '@/lib/portaal/team';
 import { getWachtendeOrders } from '@/lib/portaal/goedkeuringen';
+import { getSpaarInstellingen, getSpaarsaldo } from '@/lib/kms/sparen';
+import { formatEuro, formatGetal } from '@/lib/format';
 import { portaalLogout } from './actions';
 import PortaalNav from './PortaalNav';
 
@@ -50,10 +52,12 @@ export default async function Portaal() {
 
   const toegang = await getMijnToegang();
   const magKeuren = toegang.rol === 'beheerder' || toegang.rol === 'leidinggevende';
-  const [items, wachtend] = await Promise.all([
+  const [items, wachtend, spaarInstellingen] = await Promise.all([
     getKledinglijn(),
     magKeuren ? getWachtendeOrders() : Promise.resolve([]),
+    getSpaarInstellingen(),
   ]);
+  const spaarsaldo = spaarInstellingen.actief ? await getSpaarsaldo(org.id) : null;
 
   return (
     <main className="container-x py-12">
@@ -69,6 +73,16 @@ export default async function Portaal() {
       </div>
 
       <PortaalNav rol={toegang.rol} actief="/portaal" />
+
+      {spaarsaldo && (
+        <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-soft">
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-700">Spaarsaldo</p>
+          <p className="mt-2 font-display text-2xl font-extrabold text-ink-900">
+            {formatGetal(spaarsaldo.saldo)} {spaarsaldo.saldo === 1 ? 'punt' : 'punten'} <span className="text-warm">&middot; t.w.v. {formatEuro(spaarsaldo.euroWaarde)}</span>
+          </p>
+          <p className="mt-2 text-sm text-warm">In te zetten als korting op je volgende bestelling &mdash; vraag ernaar bij Frederiks.</p>
+        </div>
+      )}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link href="/portaal/webshop" className="rounded-2xl border border-line bg-white p-6 shadow-soft transition hover:border-amber-300">
