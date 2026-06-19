@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
+import { NieuwsbriefForm } from '@/components/NieuwsbriefForm';
 import { site } from '@/content/site';
 import { branches } from '@/content/branches';
 import { plaatsen } from '@/content/plaatsen';
@@ -7,7 +8,7 @@ import { plaatsen } from '@/content/plaatsen';
 export function Footer() {
   return (
     <footer className="mt-24 border-t-2 border-dashed border-amber-500 bg-ink-900 text-ink-100">
-      <div className="container-x grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="container-x grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-5">
         <div>
           <Logo light />
           <p className="mt-4 max-w-xs text-sm text-ink-200">{site.tagline}.</p>
@@ -51,6 +52,11 @@ export function Footer() {
             <li><Link href="/algemene-voorwaarden" className="text-ink-200 hover:text-white">Algemene voorwaarden</Link></li>
             <li><Link href="/disclaimer" className="text-ink-200 hover:text-white">Disclaimer</Link></li>
           </ul>
+        </div>
+        <div className="sm:col-span-2 lg:col-span-1">
+          <h3 className="text-sm font-semibold text-white">Nieuwsbrief</h3>
+          <p className="mt-4 max-w-xs text-sm text-ink-200">Blijf op de hoogte van werkkleding-tips en nieuws.</p>
+          <NieuwsbriefForm />
         </div>
       </div>
       <div className="border-t border-ink-800">

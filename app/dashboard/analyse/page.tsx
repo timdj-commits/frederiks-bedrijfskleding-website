@@ -14,6 +14,7 @@ import {
   type GroeiCijfers,
 } from '@/lib/kms/analytics';
 import Grafieken from './Grafieken';
+import AiSamenvatting from './AiSamenvatting';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Analyse', robots: { index: false, follow: false } };
@@ -108,6 +109,28 @@ export default async function AnalysePage() {
           </p>
         </div>
       </div>
+
+      <section className="mt-8 rounded-2xl border border-line bg-white p-6 shadow-soft">
+        <h2 className="font-display text-xl font-bold text-ink-900">AI-samenvatting</h2>
+        <p className="mt-1 text-sm text-warm">Wat moet je deze maand weten?</p>
+        <div className="mt-4">
+          <AiSamenvatting
+            cijfers={{
+              stuksDezeMaand: cijfers.stuks.huidig,
+              stuksMoMpct: cijfers.stuks.vorigeMaand.groeiPct,
+              omzetDezeMaand: cijfers.omzet.huidig,
+              omzetMoMpct: cijfers.omzet.vorigeMaand.groeiPct,
+              totaalMedewerkers: cijfers.totaalMedewerkers,
+              totaalBedrijven: cijfers.totaalBedrijven,
+              topProduct: top[0]?.naam ?? null,
+              topMerk: merken[0]?.merk ?? null,
+              voorraadwaarde: voorraad.inkoopwaarde,
+              margePotentieel: voorraad.margePotentieel,
+              leadconversiePct: conversie.conversiePct,
+            }}
+          />
+        </div>
+      </section>
 
       <section className="mt-10">
         <h2 className="font-display text-xl font-bold text-ink-900">Medewerkers per bedrijf</h2>

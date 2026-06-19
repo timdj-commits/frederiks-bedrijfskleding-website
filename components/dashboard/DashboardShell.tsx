@@ -13,6 +13,7 @@ const groepen: Groep[] = [
     { href: '/dashboard', label: 'Overzicht' },
     { href: '/dashboard/leads', label: 'Leads' },
     { href: '/dashboard/taken', label: 'Taken' },
+    { href: '/dashboard/nieuwsbrief', label: 'Nieuwsbrief' },
   ] },
   { titel: 'Verkoop', items: [
     { href: '/dashboard/klanten', label: 'Klanten' },

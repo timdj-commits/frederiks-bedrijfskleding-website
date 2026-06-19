@@ -6,6 +6,7 @@ import { env, isLeadsDbConfigured } from '@/lib/env';
 import { getLeads } from '@/lib/supabase';
 import { saveLeadEdit } from '../actions';
 import { converteerLead } from './actions';
+import AiOpvolg from './AiOpvolg';
 
 export const metadata: Metadata = { title: 'Leads', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -159,6 +160,13 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                         <input type="hidden" name="id" value={l.id} />
                         <button type="submit" className="text-xs font-semibold text-amber-700 hover:text-amber-800">Converteer naar klant</button>
                       </form>
+                      <AiOpvolg
+                        naam={l.name}
+                        bedrijf={l.company ?? ''}
+                        branche={l.branche ?? ''}
+                        bericht={l.bericht ?? ''}
+                        status={l.status}
+                      />
                     </div>
                   </td>
                 </tr>
