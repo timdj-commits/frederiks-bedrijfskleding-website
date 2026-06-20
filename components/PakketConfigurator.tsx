@@ -34,11 +34,15 @@ function Preview({ type, kleur, logo, positie, techniek }: { type: string; kleur
   );
 }
 
-export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: string }) {
+export function PakketConfigurator({ defaultBranche = '', initialLogo = null, portaal }: {
+  defaultBranche?: string;
+  initialLogo?: string | null;
+  portaal?: { onAanvraag: (p: { regels: { item_naam: string; kleur: string | null; aantal: number }[]; notitie: string }) => Promise<{ ok: boolean; error?: string }>; bedrijfsnaam?: string };
+}) {
   const [step, setStep] = useState(0);
   const [branche, setBranche] = useState(defaultBranche);
   const [team, setTeam] = useState('');
-  const [logo, setLogo] = useState<string | null>(null);
+  const [logo, setLogo] = useState<string | null>(initialLogo);
   const [logoNaam, setLogoNaam] = useState<string | null>(null);
   const [techniek, setTechniek] = useState<'borduren' | 'bedrukken'>('borduren');
   const [defPositie, setDefPositie] = useState('borst-links');
@@ -144,6 +148,32 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
     ].join('\n');
   }
 
+  function buildRegels(): { item_naam: string; kleur: string | null; aantal: number }[] {
+    const kleding = items.map((i) => ({
+      item_naam: `${typeLabel(i.type)}, logo ${posLabel(i.positie).toLowerCase()} (${techniek})`,
+      kleur: kleuren[i.kleur].name,
+      aantal: Math.max(1, parseInt(i.aantal || '1', 10) || 1),
+    }));
+    const extra = extrasOpties.filter((e) => extras[e.id]?.on).map((e) => ({
+      item_naam: e.label,
+      kleur: null,
+      aantal: Math.max(1, parseInt(extras[e.id].aantal || '1', 10) || 1),
+    }));
+    return [...kleding, ...extra];
+  }
+
+  async function submitPortaal() {
+    if (!portaal) return;
+    if (items.length === 0) { setError('Voeg eerst minstens één kledingstuk toe aan je pakket.'); return; }
+    setStatus('sending'); setError('');
+    try {
+      const res = await portaal.onAanvraag({ regels: buildRegels(), notitie: buildBericht() });
+      if (!res.ok) throw new Error(res.error ?? 'Er ging iets mis.');
+      (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.('event', 'generate_lead', { event_label: 'pakket-configurator-portaal' });
+      setStatus('ok');
+    } catch (e) { setStatus('error'); setError(e instanceof Error ? e.message : 'Onbekende fout'); }
+  }
+
   async function mailOntwerp() {
     if (!mailEmail || !mailConsent) { setMailError('Vul je e-mailadres in en geef toestemming.'); return; }
     setMailStatus('sending'); setMailError('');
@@ -187,8 +217,18 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
   if (status === 'ok') {
     return (
       <div className="mx-auto max-w-2xl rounded-2xl border-2 border-amber-500 bg-white p-8 text-center shadow-card">
-        <p className="font-display text-2xl font-extrabold text-ink-900">Bedankt, {contact.name.split(' ')[0]}.</p>
-        <p className="mt-3 text-warm">We hebben je samengestelde pakket binnen. We bellen je binnen een werkdag terug om het door te nemen en maken een offerte op maat. Je krijgt ook een bevestiging per e-mail.</p>
+        {portaal ? (
+          <>
+            <p className="font-display text-2xl font-extrabold text-ink-900">Je ontwerp staat klaar.</p>
+            <p className="mt-3 text-warm">We hebben je ontwerpaanvraag als concept ontvangen. Frederiks werkt het uit tot producten, maten en een offerte, en neemt contact op. Je ziet de aanvraag terug bij Mijn bestellingen.</p>
+            <a href="/portaal/bestellingen" className="btn-primary mt-5 inline-block">Naar mijn bestellingen</a>
+          </>
+        ) : (
+          <>
+            <p className="font-display text-2xl font-extrabold text-ink-900">Bedankt, {contact.name.split(' ')[0]}.</p>
+            <p className="mt-3 text-warm">We hebben je samengestelde pakket binnen. We bellen je binnen een werkdag terug om het door te nemen en maken een offerte op maat. Je krijgt ook een bevestiging per e-mail.</p>
+          </>
+        )}
       </div>
     );
   }
@@ -378,6 +418,15 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
                 )}
               </div>
             </div>
+            {portaal ? (
+            <div className="no-print rounded-2xl border-2 border-amber-500 bg-white p-6 shadow-card">
+              <h3 className="text-lg font-extrabold text-ink-900">Verstuur als ontwerpaanvraag</h3>
+              <p className="mt-1 text-sm text-warm">Je ontwerp komt als concept binnen bij Frederiks{portaal.bedrijfsnaam ? ` voor ${portaal.bedrijfsnaam}` : ''}. We werken het uit tot producten, maten en een offerte, en nemen contact op.</p>
+              {error && <p className="mt-3 text-sm font-medium text-amber-700" role="alert">{error}</p>}
+              <button type="button" onClick={submitPortaal} disabled={status === 'sending'} className="btn-primary mt-4 w-full">{status === 'sending' ? 'Versturen' : 'Verstuur ontwerpaanvraag'}</button>
+              <button type="button" onClick={() => window.print()} className="btn-outline mt-3 w-full px-4 py-2 text-[13px]">Download samenvatting (PDF)</button>
+            </div>
+            ) : (
             <div className="no-print rounded-2xl border-2 border-amber-500 bg-white p-6 shadow-card">
               <h3 className="text-lg font-extrabold text-ink-900">Vraag je pakket als offerte aan</h3>
               <p className="mt-1 text-sm text-warm">We bellen je binnen een werkdag terug en denken vrijblijvend mee.</p>
@@ -399,12 +448,13 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
               </div>
               <p className="mt-2 text-xs text-warm">Bewaar je samenstelling of stuur de link naar een collega. De PDF maak je via je printervenster (kies daar &ldquo;Opslaan als PDF&rdquo;).</p>
             </div>
+            )}
           </div>
         )}
 
         {error && step !== 3 && <p className="no-print mt-4 text-sm font-medium text-amber-700" role="alert">{error}</p>}
 
-        {step < totaalStappen - 1 && (
+        {!portaal && step < totaalStappen - 1 && (
           <div className="no-print mt-8 rounded-xl border border-dashed border-line bg-mist p-4">
             {mailStatus === 'ok' ? (
               <p className="text-sm font-medium text-ink-800">Gelukt. Je ontwerp staat in je mail, met een link om later verder te gaan.</p>

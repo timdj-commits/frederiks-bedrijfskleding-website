@@ -14,6 +14,7 @@ export default function PortaalNav({ rol, actief }: { rol: PortaalRol | null; ac
   const links: { href: string; label: string; toon: boolean }[] = [
     { href: '/portaal', label: 'Overzicht', toon: true },
     { href: '/portaal/webshop', label: 'Kleding bestellen', toon: true },
+    { href: '/portaal/ontwerpen', label: 'Pakket ontwerpen', toon: mag(['beheerder', 'leidinggevende']) },
     { href: '/portaal/bestellingen', label: 'Mijn bestellingen', toon: true },
     { href: '/portaal/retouren', label: 'Retouren', toon: true },
     { href: '/portaal/klachten', label: 'Vragen en klachten', toon: true },
