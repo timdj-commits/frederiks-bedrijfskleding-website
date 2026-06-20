@@ -51,6 +51,11 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState('');
   const [gedeeld, setGedeeld] = useState(false);
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailEmail, setMailEmail] = useState('');
+  const [mailConsent, setMailConsent] = useState(false);
+  const [mailStatus, setMailStatus] = useState<Status>('idle');
+  const [mailError, setMailError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const allePosities = [...logoposities, ...broekposities];
@@ -119,9 +124,42 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
     setLastAdded(null);
   }
 
-  async function kopieerLink() {
+  function buildResumeUrl(): string {
     const payload = { branche, team, techniek, defPositie, items, extras };
-    const url = `${window.location.origin}${window.location.pathname}?p=${encodeURIComponent(encodeState(payload))}`;
+    return `${window.location.origin}${window.location.pathname}?p=${encodeURIComponent(encodeState(payload))}`;
+  }
+
+  function buildBericht(): string {
+    const kledingLijst = items.length
+      ? items.map((i) => `- ${typeLabel(i.type)}, ${kleuren[i.kleur].name}, logo ${posLabel(i.positie).toLowerCase()}${i.aantal ? `, ${i.aantal}x` : ''}`).join('\n')
+      : '- (nog geen kledingstukken toegevoegd)';
+    const extraLijst = extrasOpties.filter((e) => extras[e.id]?.on).map((e) => `- ${e.label}${extras[e.id].aantal ? ` (${extras[e.id].aantal}x)` : ''}`).join('\n');
+    return [
+      'Pakket samengesteld via de configurator.',
+      `Branche: ${branche || 'niet opgegeven'}`,
+      `Teamgrootte: ${team || 'niet opgegeven'}`,
+      `Logo: ${logo ? 'aangeleverd' : 'volgt later'}, techniek ${techniek}`,
+      'Kledingstukken:', kledingLijst,
+      ...(extraLijst ? ['Aanvullend:', extraLijst] : []),
+    ].join('\n');
+  }
+
+  async function mailOntwerp() {
+    if (!mailEmail || !mailConsent) { setMailError('Vul je e-mailadres in en geef toestemming.'); return; }
+    setMailStatus('sending'); setMailError('');
+    try {
+      const res = await fetch('/api/ontwerp-mail', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: contact.name || '', email: mailEmail, bericht: buildBericht(), resumeUrl: buildResumeUrl(), logo: logo ?? '', logoNaam: logoNaam ?? '', bron: getHerkomst(), consent: true }),
+      });
+      if (!res.ok) { const j = await res.json().catch(() => null); throw new Error(j?.error ?? 'Er ging iets mis.'); }
+      (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.('event', 'generate_lead', { event_label: 'pakket-configurator-ontwerp-mail' });
+      setMailStatus('ok');
+    } catch (e) { setMailStatus('error'); setMailError(e instanceof Error ? e.message : 'Onbekende fout'); }
+  }
+
+  async function kopieerLink() {
+    const url = buildResumeUrl();
     try {
       await navigator.clipboard.writeText(url);
       setGedeeld(true);
@@ -134,18 +172,7 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
   async function submit() {
     if (!contact.name || !contact.email || !consent) { setError('Vul je naam en e-mailadres in en geef toestemming.'); return; }
     setStatus('sending'); setError('');
-    const kledingLijst = items.length
-      ? items.map((i) => `- ${typeLabel(i.type)}, ${kleuren[i.kleur].name}, logo ${posLabel(i.positie).toLowerCase()}${i.aantal ? `, ${i.aantal}x` : ''}`).join('\n')
-      : '- (nog geen kledingstukken toegevoegd)';
-    const extraLijst = extrasOpties.filter((e) => extras[e.id]?.on).map((e) => `- ${e.label}${extras[e.id].aantal ? ` (${extras[e.id].aantal}x)` : ''}`).join('\n');
-    const bericht = [
-      'Pakket samengesteld via de configurator.',
-      `Branche: ${branche || 'niet opgegeven'}`,
-      `Teamgrootte: ${team || 'niet opgegeven'}`,
-      `Logo: ${logo ? 'aangeleverd' : 'volgt later'}, techniek ${techniek}`,
-      'Kledingstukken:', kledingLijst,
-      ...(extraLijst ? ['Aanvullend:', extraLijst] : []),
-    ].join('\n');
+    const bericht = buildBericht();
     try {
       const res = await fetch('/api/lead', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -376,6 +403,34 @@ export function PakketConfigurator({ defaultBranche = '' }: { defaultBranche?: s
         )}
 
         {error && step !== 3 && <p className="no-print mt-4 text-sm font-medium text-amber-700" role="alert">{error}</p>}
+
+        {step < totaalStappen - 1 && (
+          <div className="no-print mt-8 rounded-xl border border-dashed border-line bg-mist p-4">
+            {mailStatus === 'ok' ? (
+              <p className="text-sm font-medium text-ink-800">Gelukt. Je ontwerp staat in je mail, met een link om later verder te gaan.</p>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-ink-800">Nu geen tijd? Mail jezelf je ontwerp en ga later verder.</p>
+                  {!mailOpen && <button type="button" onClick={() => setMailOpen(true)} className="btn-outline px-4 py-2 text-[13px]">Mail mij mijn ontwerp</button>}
+                </div>
+                {mailOpen && (
+                  <div className="mt-3">
+                    <div className="flex flex-wrap gap-2">
+                      <input className={`${field} max-w-xs flex-1`} type="email" placeholder="Je e-mailadres" value={mailEmail} onChange={(e) => setMailEmail(e.target.value)} autoComplete="email" />
+                      <button type="button" onClick={mailOntwerp} disabled={mailStatus === 'sending'} className="btn-primary px-4 py-2 text-[13px]">{mailStatus === 'sending' ? 'Versturen' : 'Stuur mij de link'}</button>
+                    </div>
+                    <label className="mt-2 flex items-start gap-2 text-xs text-warm">
+                      <input type="checkbox" checked={mailConsent} onChange={(e) => setMailConsent(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-line text-amber-500 focus:ring-amber-300" />
+                      Ik ga ermee akkoord dat Frederiks mijn ontwerp en e-mailadres gebruikt om contact met me op te nemen.
+                    </label>
+                    {mailError && <p className="mt-2 text-xs font-medium text-amber-700" role="alert">{mailError}</p>}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         <div className="no-print mt-8 flex items-center justify-between gap-3 border-t border-line pt-5">
           <button type="button" onClick={back} className={`text-sm font-semibold text-warm hover:text-ink-800 ${step === 0 ? 'invisible' : ''}`}>Terug</button>
