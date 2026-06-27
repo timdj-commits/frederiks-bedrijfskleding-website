@@ -84,7 +84,7 @@ export default async function OffertesPage({ searchParams }: { searchParams: Pro
                   <tr>
                     <SortableTh label="Nummer" col="offertenummer" />
                     <th className="px-4 py-3">Klant</th>
-                    <SortableTh label="Datum" col="created_at" />
+                    <SortableTh label="Datum" col="created_at" className="hidden sm:table-cell" />
                     <SortableTh label="Status" col="status" />
                     <th className="px-4 py-3 text-right">Totaal</th>
                   </tr>
@@ -98,7 +98,7 @@ export default async function OffertesPage({ searchParams }: { searchParams: Pro
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-ink-900">{o.organisatie_naam || '-'}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-warm">{formatDatum(o.created_at) || '-'}</td>
+                      <td className="hidden whitespace-nowrap px-4 py-3 text-warm sm:table-cell">{formatDatum(o.created_at) || '-'}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge[o.status] ?? 'bg-ink-100 text-ink-600'}`}>{o.status}</span>
                       </td>

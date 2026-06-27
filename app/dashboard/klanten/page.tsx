@@ -110,7 +110,7 @@ export default async function KlantenPage({ searchParams }: { searchParams: Prom
                 <thead className="border-b border-line bg-mist text-xs uppercase tracking-wide text-warm">
                   <tr>
                     <th className="px-4 py-3">Naam</th>
-                    <th className="px-4 py-3">Plaats</th>
+                    <th className="hidden px-4 py-3 sm:table-cell">Plaats</th>
                     <th className="px-4 py-3">Medewerkers</th>
                     <th className="hidden px-4 py-3 sm:table-cell">Aangemaakt</th>
                   </tr>
@@ -121,7 +121,7 @@ export default async function KlantenPage({ searchParams }: { searchParams: Prom
                       <td className="px-4 py-3">
                         <Link href={`/dashboard/klanten/${o.id}`} className="font-semibold text-amber-700 hover:text-amber-800">{o.naam}</Link>
                       </td>
-                      <td className="px-4 py-3 text-warm">{o.plaats || '-'}</td>
+                      <td className="hidden px-4 py-3 text-warm sm:table-cell">{o.plaats || '-'}</td>
                       <td className="px-4 py-3 text-warm">{aantalPerOrg[o.id] ?? 0}</td>
                       <td className="hidden whitespace-nowrap px-4 py-3 text-warm sm:table-cell">{fmt(o.created_at)}</td>
                     </tr>

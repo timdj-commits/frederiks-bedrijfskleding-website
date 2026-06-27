@@ -85,8 +85,8 @@ export default async function ProductenPage({ searchParams }: { searchParams: Pr
                   <tr>
                     <SortableTh label="Naam" col="naam" />
                     <SortableTh label="Merk" col="merk" />
-                    <SortableTh label="Categorie" col="categorie" />
-                    <th className="px-4 py-3">Varianten</th>
+                    <SortableTh label="Categorie" col="categorie" className="hidden sm:table-cell" />
+                    <th className="hidden px-4 py-3 sm:table-cell">Varianten</th>
                     <th className="px-4 py-3">Status</th>
                   </tr>
                 </thead>
@@ -97,8 +97,8 @@ export default async function ProductenPage({ searchParams }: { searchParams: Pr
                         <Link href={`/dashboard/producten/${p.id}`} className="font-semibold text-amber-700 hover:text-amber-800">{p.naam}</Link>
                       </td>
                       <td className="px-4 py-3 text-warm">{p.merk || '-'}</td>
-                      <td className="px-4 py-3 text-warm">{p.categorie || '-'}</td>
-                      <td className="px-4 py-3 text-warm">{p.aantal_varianten}</td>
+                      <td className="hidden px-4 py-3 text-warm sm:table-cell">{p.categorie || '-'}</td>
+                      <td className="hidden px-4 py-3 text-warm sm:table-cell">{p.aantal_varianten}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${p.actief ? 'bg-green-100 text-green-800' : 'bg-ink-100 text-ink-500'}`}>{p.actief ? 'actief' : 'inactief'}</span>
                       </td>

@@ -116,11 +116,11 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
                       <th className="px-4 py-3"><span className="sr-only">Selecteren</span></th>
                       <SortableTh label="Nummer" col="factuurnummer" />
                       <th className="px-4 py-3">Klant</th>
-                      <SortableTh label="Datum" col="factuurdatum" />
-                      <SortableTh label="Vervaldatum" col="vervaldatum" />
+                      <SortableTh label="Datum" col="factuurdatum" className="hidden sm:table-cell" />
+                      <SortableTh label="Vervaldatum" col="vervaldatum" className="hidden sm:table-cell" />
                       <SortableTh label="Bedrag incl." col="bedrag_incl" />
                       <SortableTh label="Status" col="status" />
-                      <th className="px-4 py-3">Boekhouder</th>
+                      <th className="hidden px-4 py-3 sm:table-cell">Boekhouder</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -133,13 +133,13 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
                           <Link href={`/dashboard/facturen/${f.id}`} className="font-semibold text-amber-700 hover:text-amber-800">{f.factuurnummer || 'concept'}</Link>
                         </td>
                         <td className="px-4 py-3 text-ink-900">{f.organisatie_naam || '-'}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-warm">{fmt(f.factuurdatum)}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-warm">{fmt(f.vervaldatum)}</td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 text-warm sm:table-cell">{fmt(f.factuurdatum)}</td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 text-warm sm:table-cell">{fmt(f.vervaldatum)}</td>
                         <td className="whitespace-nowrap px-4 py-3 text-warm">{f.bedrag_incl != null ? euro(Number(f.bedrag_incl)) : '-'}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge[f.status] ?? 'bg-ink-100 text-ink-600'}`}>{f.status}</span>
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3">
+                        <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell">
                           {f.gemaild_op ? (
                             <span className="inline-block rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">Gemaild · {fmt(f.gemaild_op)}</span>
                           ) : (
