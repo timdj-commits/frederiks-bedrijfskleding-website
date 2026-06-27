@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 import { env, isLeadsDbConfigured } from '@/lib/env';
 import { getLeads } from '@/lib/supabase';
 import { saveLeadEdit } from '../actions';
-import { converteerLead } from './actions';
+import { converteerLead, bulkConverteerLeads } from './actions';
 import AiOpvolg from './AiOpvolg';
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
 
@@ -127,10 +127,16 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
       {leads.length === 0 ? (
         <p className="mt-10 text-sm text-warm">Geen aanvragen die aan dit filter voldoen.</p>
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
+        <>
+        <form id="bulkleads" action={bulkConverteerLeads} className="mb-3 flex justify-end">
+          <input type="hidden" name="terug" value={terug} />
+          <button type="submit" className="rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Converteer geselecteerde naar klant</button>
+        </form>
+        <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line bg-mist text-xs uppercase tracking-wide text-warm">
               <tr>
+                <th className="px-4 py-3"><span className="sr-only">Selecteren</span></th>
                 <th className="px-4 py-3">Datum</th>
                 <th className="px-4 py-3">Contact</th>
                 <th className="px-4 py-3">Branche / herkomst</th>
@@ -141,6 +147,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             <tbody>
               {leads.map((l) => (
                 <tr key={l.id} className="border-b border-line align-top">
+                  <td className="px-4 py-3">
+                    <input type="checkbox" name="lead_ids" value={l.id} form="bulkleads" className="h-4 w-4 rounded border-line text-amber-600 focus:ring-amber-200" aria-label={`Selecteer lead ${l.name}`} />
+                  </td>
                   <td className="whitespace-nowrap px-4 py-3 text-warm">{fmt(l.created_at)}</td>
                   <td className="px-4 py-3">
                     <p className="font-semibold text-ink-900">{l.name}{l.company ? ` · ${l.company}` : ''}</p>
@@ -198,6 +207,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             </tbody>
           </table>
         </div>
+        </>
       )}
     </main>
   );

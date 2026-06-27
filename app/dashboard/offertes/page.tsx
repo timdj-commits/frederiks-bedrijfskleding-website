@@ -7,7 +7,7 @@ import { formatEuro, formatDatum } from '@/lib/format';
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
 import SortableTh from '@/components/dashboard/SortableTh';
 import EmptyState from '@/components/dashboard/EmptyState';
-import { maakOfferteActie } from './actions';
+import { maakOfferteActie, bulkOfferteStatusActie } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Offertes', robots: { index: false, follow: false } };
@@ -49,6 +49,9 @@ export default async function OffertesPage({ searchParams }: { searchParams: Pro
   const aantalPaginas = Math.max(1, Math.ceil(totaal / PER_PAGINA));
   const statusQs = status ? `&status=${encodeURIComponent(status)}` : '';
   const sorteerQs = `${sort ? `&sort=${encodeURIComponent(sort)}` : ''}${dir ? `&dir=${encodeURIComponent(richting)}` : ''}`;
+  // URL van de huidige weergave: na een bulk-statuswijziging keren we hier terug
+  // zodat statusfilter, sortering en pagina behouden blijven.
+  const huidigeUrl = `/dashboard/offertes?pagina=${huidigePagina}${statusQs}${sorteerQs}`;
 
   return (
     <main className="container-x py-12">
@@ -78,10 +81,20 @@ export default async function OffertesPage({ searchParams }: { searchParams: Pro
           {offertes.length === 0 ? (
             <EmptyState tekst="Geen offertes gevonden. Maak er rechts een aan." />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
+            <>
+              <form id="bulkoffertes" action={bulkOfferteStatusActie} className="mb-3 flex flex-wrap items-center justify-end gap-2">
+                <input type="hidden" name="terug" value={huidigeUrl} />
+                <span className="text-xs text-warm">Status van geselecteerde:</span>
+                <select name="bulk_status" aria-label="Nieuwe status voor geselecteerde offertes" className="rounded-md border border-line px-2 py-1.5 text-xs font-semibold focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+                  {OFFERTE_STATUSSEN.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <button type="submit" className="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-ink-800">Toepassen</button>
+              </form>
+              <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-line bg-mist text-xs uppercase tracking-wide text-warm">
                   <tr>
+                    <th className="px-4 py-3"><span className="sr-only">Selecteren</span></th>
                     <SortableTh label="Nummer" col="offertenummer" />
                     <th className="px-4 py-3">Klant</th>
                     <SortableTh label="Datum" col="created_at" className="hidden sm:table-cell" />
@@ -92,6 +105,9 @@ export default async function OffertesPage({ searchParams }: { searchParams: Pro
                 <tbody>
                   {offertes.map((o) => (
                     <tr key={o.id} className="border-b border-line">
+                      <td className="px-4 py-3">
+                        <input type="checkbox" name="offerte_ids" value={o.id} form="bulkoffertes" className="h-4 w-4 rounded border-line text-amber-600 focus:ring-amber-200" aria-label={`Selecteer offerte ${o.offertenummer != null ? `#${o.offertenummer}` : 'concept'}`} />
+                      </td>
                       <td className="px-4 py-3">
                         <Link href={`/dashboard/offertes/${o.id}`} className="font-semibold text-amber-700 hover:text-amber-800">
                           {o.offertenummer != null ? `#${o.offertenummer}` : 'concept'}
@@ -107,7 +123,8 @@ export default async function OffertesPage({ searchParams }: { searchParams: Pro
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+            </>
           )}
           {aantalPaginas > 1 && (
             <nav className="mt-4 flex items-center justify-between gap-4 text-sm" aria-label="Paginering">
