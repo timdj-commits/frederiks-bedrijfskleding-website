@@ -8,6 +8,7 @@ import {
   type RetourMetLabels,
 } from '@/lib/kms/service';
 import { getRetourtermijn, type RetourRegel } from '@/lib/portaal/service';
+import AutoSubmitSelect from '@/components/dashboard/AutoSubmitSelect';
 import { nieuwRetour, wijzigRetourStatus, wijzigRetourInstructie, zetRetourbeleid } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -95,6 +96,7 @@ export default async function RetourenPage({
           Het retourbeleid is opgeslagen.
         </div>
       )}
+
 
       <div className="mt-6 rounded-2xl border border-line bg-white p-6 shadow-soft">
         <h2 className="font-display text-lg font-bold text-ink-900">Retourbeleid</h2>
@@ -204,17 +206,17 @@ function RetourKaart({ r, regels }: { r: RetourMetLabels; regels: RetourRegel[] 
 
       {r.reden && <p className="mt-3 text-sm text-ink-800">{r.reden}</p>}
 
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
-        {RETOUR_STATUSSEN.filter((s) => s !== r.status).map((s) => (
-          <form key={s} action={wijzigRetourStatus}>
-            <input type="hidden" name="retourId" value={r.id} />
-            <input type="hidden" name="status" value={s} />
-            <button type="submit" className="rounded-md bg-mist px-2.5 py-1 text-xs font-semibold text-warm hover:bg-ink-100 hover:text-ink-800">
-              Markeer als {statusLabel(s)}
-            </button>
-          </form>
-        ))}
-      </div>
+      <form action={wijzigRetourStatus} className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+        <input type="hidden" name="retourId" value={r.id} />
+        <label className="text-xs font-semibold text-warm">Status</label>
+        <AutoSubmitSelect
+          name="status"
+          defaultValue={r.status}
+          aria-label="Status"
+          className="rounded-md border border-line px-2.5 py-1 text-xs font-semibold text-ink-800 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
+          options={RETOUR_STATUSSEN.map((s) => ({ value: s, label: statusLabel(s) }))}
+        />
+      </form>
 
       <form action={wijzigRetourInstructie} className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
         <input type="hidden" name="retourId" value={r.id} />

@@ -36,7 +36,8 @@ export async function wijzigRetourStatus(formData: FormData) {
     await zetRetourStatus(id, status);
     await logAudit('retourstatus_gewijzigd', { entiteit: 'retour', entiteitId: id, details: { status } });
   }
-  redirect('/dashboard/retouren');
+  const terug = '/dashboard/retouren';
+  redirect(`${terug}${terug.includes('?') ? '&' : '?'}ok=status`);
 }
 
 export async function wijzigRetourInstructie(formData: FormData) {

@@ -27,6 +27,6 @@ export async function wijzigOrderStatusInline(formData: FormData) {
   const status = String(formData.get('status') ?? '').trim();
   if (orderId && status) await zetOrderStatus(orderId, status);
   revalidatePath('/dashboard/orders');
-  const terug = String(formData.get('terug') ?? '').trim();
-  redirect(terug || '/dashboard/orders');
+  const terug = String(formData.get('terug') ?? '').trim() || '/dashboard/orders';
+  redirect(`${terug}${terug.includes('?') ? '&' : '?'}ok=status`);
 }

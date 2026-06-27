@@ -38,7 +38,7 @@ function dateInputWaarde(d: string | null): string {
 export default async function OfferteDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; fout?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
   const { id } = await params;
-  const { ok, fout } = await searchParams;
+  await searchParams;
   const sb = kmsAdmin();
 
   if (!sb) {
@@ -69,16 +69,6 @@ export default async function OfferteDetailPage({ params, searchParams }: { para
   const { subtotaal, korting, btw, totaal, marge } = offerteTotalen(offerte.regels, offerte.btw_pct);
   const opties = await getKlantProductOpties(offerte.organisatie_id);
   const verlopen = !!offerte.geldig_tot && offerte.status !== 'geaccepteerd' && offerte.status !== 'afgewezen' && new Date(offerte.geldig_tot) < new Date(new Date().toDateString());
-  const okTekst: Record<string, string> = {
-    aangemaakt: 'Offerte aangemaakt. Vul hieronder de regels in.',
-    opgeslagen: 'Kopgegevens opgeslagen.',
-    status: 'Status bijgewerkt.',
-    gemaild: 'Offerte gemaild naar de klant.',
-  };
-  const foutTekst: Record<string, string> = {
-    order: 'Kon geen order maken. Koppel eerst een klant aan de offerte.',
-    mail: 'Vul een e-mailadres in om de offerte te mailen.',
-  };
 
   return (
     <main className="container-x py-12">
@@ -93,12 +83,6 @@ export default async function OfferteDetailPage({ params, searchParams }: { para
         </div>
       </div>
 
-      {ok && okTekst[ok] && (
-        <p className="mt-4 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-800">{okTekst[ok]}</p>
-      )}
-      {fout && foutTekst[fout] && (
-        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-800">{foutTekst[fout]}</p>
-      )}
 
       <section className="mt-8 grid gap-6 lg:grid-cols-3">
         <div className="rounded-2xl border border-line bg-white p-6 shadow-soft lg:col-span-2">

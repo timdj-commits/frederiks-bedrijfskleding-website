@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { logout } from '@/app/dashboard/actions';
 import CommandPalette from './CommandPalette';
+import Toast from './Toast';
 
 type Item = { href: string; label: string };
 type Groep = { titel: string; items: Item[] };
@@ -148,6 +149,7 @@ export function DashboardShell({
       <aside className="hidden w-60 shrink-0 bg-ink-900 md:block">{nav}</aside>
       <main className="min-w-0 flex-1">{children}</main>
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <Toast />
     </div>
   );
 }

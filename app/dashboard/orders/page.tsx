@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { listOrdersPaged, ORDER_STATUSSEN } from '@/lib/kms/orders';
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
+import AutoSubmitSelect from '@/components/dashboard/AutoSubmitSelect';
 import SortableTh from '@/components/dashboard/SortableTh';
 import EmptyState from '@/components/dashboard/EmptyState';
 import { nieuweOrder, wijzigOrderStatusInline } from './actions';
@@ -124,15 +125,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                         <form action={wijzigOrderStatusInline} className="flex items-center gap-1.5" data-statusform>
                           <input type="hidden" name="orderId" value={o.id} />
                           <input type="hidden" name="terug" value={huidigeUrl} />
-                          <select
+                          <AutoSubmitSelect
                             name="status"
                             defaultValue={o.status}
-                            aria-label="Status wijzigen"
+                            aria-label="Status"
                             className={`rounded-md border border-line px-2 py-1 text-xs font-semibold focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200 ${statusBadge[o.status] ?? 'bg-ink-100 text-ink-600'}`}
-                          >
-                            {ORDER_STATUSSEN.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
-                          </select>
-                          <button type="submit" className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink-700 hover:bg-mist" data-statusbtn>Opslaan</button>
+                            options={ORDER_STATUSSEN.map((s) => ({ value: s, label: s }))}
+                          />
                         </form>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-warm">{o.bedrag != null ? euro(Number(o.bedrag)) : '-'}</td>
@@ -184,19 +183,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           </form>
         </div>
       </div>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(function(){
-            document.querySelectorAll('form[data-statusform]').forEach(function(f){
-              var sel = f.querySelector('select[name="status"]');
-              if(!sel) return;
-              sel.addEventListener('change', function(){
-                if (f.requestSubmit) { f.requestSubmit(); } else { f.submit(); }
-              });
-            });
-          })();`,
-        }}
-      />
     </main>
   );
 }

@@ -43,5 +43,6 @@ export async function adminRolWijzigen(formData: FormData) {
   const rol = String(formData.get('rol') ?? '');
   await wijzigAdminRol(id, rol);
   revalidatePath('/dashboard/admins');
-  redirect('/dashboard/admins');
+  const terug = '/dashboard/admins';
+  redirect(`${terug}${terug.includes('?') ? '&' : '?'}ok=bijgewerkt`);
 }

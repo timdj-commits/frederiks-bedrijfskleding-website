@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { dashAuthed, getHuidigeAdmin } from '@/lib/kms/adminClient';
 import { listAdmins } from '@/lib/kms/adminGebruikers';
 import { adminToevoegen, adminActiefZetten, adminRolWijzigen } from './actions';
+import { AutoSubmitSelect } from '@/components/dashboard/AutoSubmitSelect';
 
 export const metadata: Metadata = { title: 'Beheerders', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -75,12 +76,13 @@ export default async function AdminsPage({ searchParams }: { searchParams: Promi
                       <td className="py-2 pr-3">
                         <form action={adminRolWijzigen} className="flex items-center gap-2">
                           <input type="hidden" name="id" value={a.id} />
-                          <select name="rol" defaultValue={a.rol} className="rounded-md border border-line bg-white px-2 py-1 text-sm">
-                            <option value="eigenaar">Eigenaar</option>
-                            <option value="medewerker">Medewerker</option>
-                            <option value="lezer">Lezer</option>
-                          </select>
-                          <button type="submit" className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink-700 hover:bg-mist">Opslaan</button>
+                          <AutoSubmitSelect
+                            name="rol"
+                            defaultValue={a.rol}
+                            aria-label="Rol"
+                            className="rounded-md border border-line bg-white px-2 py-1 text-sm"
+                            options={['eigenaar', 'medewerker', 'lezer'].map((r) => ({ value: r, label: rolLabel[r] }))}
+                          />
                         </form>
                       </td>
                       <td className="py-2 pr-3">
