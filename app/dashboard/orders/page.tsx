@@ -6,7 +6,7 @@ import NavigateSelect from '@/components/dashboard/NavigateSelect';
 import AutoSubmitSelect from '@/components/dashboard/AutoSubmitSelect';
 import SortableTh from '@/components/dashboard/SortableTh';
 import EmptyState from '@/components/dashboard/EmptyState';
-import { nieuweOrder, wijzigOrderStatusInline } from './actions';
+import { nieuweOrder, wijzigOrderStatusInline, bulkOrderStatusActie } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Orders', robots: { index: false, follow: false } };
@@ -98,10 +98,20 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           {orders.length === 0 ? (
             <EmptyState tekst="Geen orders gevonden. Maak er rechts een aan." />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
+            <>
+              <form id="bulkorders" action={bulkOrderStatusActie} className="mb-3 flex flex-wrap items-center justify-end gap-2">
+                <input type="hidden" name="terug" value={huidigeUrl} />
+                <span className="text-xs text-warm">Status van geselecteerde:</span>
+                <select name="bulk_status" aria-label="Nieuwe status voor geselecteerde orders" className="rounded-md border border-line px-2 py-1.5 text-xs font-semibold focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+                  {ORDER_STATUSSEN.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                </select>
+                <button type="submit" className="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-ink-800">Toepassen</button>
+              </form>
+              <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-line bg-mist text-xs uppercase tracking-wide text-warm">
                   <tr>
+                    <th className="px-4 py-3"><span className="sr-only">Selecteren</span></th>
                     <SortableTh label="Nr." col="ordernummer" />
                     <th className="px-4 py-3">Klant</th>
                     <SortableTh label="Datum" col="besteldatum" />
@@ -113,6 +123,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 <tbody>
                   {orders.map((o) => (
                     <tr key={o.id} className="border-b border-line">
+                      <td className="px-4 py-3">
+                        <input type="checkbox" name="order_ids" value={o.id} form="bulkorders" className="h-4 w-4 rounded border-line text-amber-600 focus:ring-amber-200" aria-label={`Selecteer order #${o.ordernummer}`} />
+                      </td>
                       <td className="px-4 py-3">
                         <Link href={`/dashboard/orders/${o.id}`} className="font-semibold text-amber-700 hover:text-amber-800">#{o.ordernummer}</Link>
                       </td>
@@ -142,7 +155,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+            </>
           )}
           {aantalPaginas > 1 && (
             <nav className="mt-4 flex items-center justify-between gap-4 text-sm" aria-label="Paginering">

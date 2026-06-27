@@ -30,3 +30,16 @@ export async function wijzigOrderStatusInline(formData: FormData) {
   const terug = String(formData.get('terug') ?? '').trim() || '/dashboard/orders';
   redirect(`${terug}${terug.includes('?') ? '&' : '?'}ok=status`);
 }
+
+/** Bulk-statuswijziging voor alle aangevinkte orders in één keer. */
+export async function bulkOrderStatusActie(formData: FormData) {
+  if (!(await dashAuthed())) redirect('/dashboard');
+  const ids = formData.getAll('order_ids').map((v) => String(v).trim()).filter(Boolean);
+  const status = String(formData.get('bulk_status') ?? '').trim();
+  const terug = String(formData.get('terug') ?? '').trim() || '/dashboard/orders';
+  if (ids.length && status) {
+    for (const id of ids) await zetOrderStatus(id, status);
+  }
+  revalidatePath('/dashboard/orders');
+  redirect(`${terug}${terug.includes('?') ? '&' : '?'}ok=status`);
+}
