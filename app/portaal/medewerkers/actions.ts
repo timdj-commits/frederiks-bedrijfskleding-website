@@ -10,6 +10,7 @@ import {
   zetBudget,
   type PortaalRol,
 } from '@/lib/portaal/team';
+import { maakVerzoek } from '@/lib/portaal/verzoeken';
 
 const rollen: PortaalRol[] = ['beheerder', 'leidinggevende', 'medewerker'];
 function leesRol(waarde: string): PortaalRol {
@@ -42,36 +43,48 @@ async function guardBeheerder() {
 }
 
 /**
- * Voegt een persoon toe. Met e-mail + rol wordt meteen een login aangemaakt;
- * dat mag alleen een beheerder. Zonder e-mail wordt alleen de persoon vastgelegd
- * (ook een leidinggevende mag dat).
+ * Dient een verzoek in om een persoon toe te voegen. Beheerders en leidinggevenden
+ * voegen niet meer direct toe: het verzoek gaat pas in als Jessi het goedkeurt.
  */
 export async function nieuweMedewerker(formData: FormData) {
   const toegang = await guardBeheren();
   const naam = String(formData.get('naam') ?? '').trim();
   const functie = String(formData.get('functie') ?? '').trim();
   const email = String(formData.get('email') ?? '').trim();
-  const rol = leesRol(String(formData.get('rol') ?? 'medewerker'));
   const budget = leesBudget(String(formData.get('budget') ?? ''));
   if (!naam) redirect('/portaal/medewerkers?fout=naam');
-  // Een leidinggevende mag geen login meegeven: negeer de e-mail in dat geval.
-  const mailVoorLogin = toegang.rol === 'beheerder' ? email : '';
-  const res = await maakMedewerkerMetToegang({
+  await maakVerzoek({
     organisatieId: toegang.organisatieId!,
+    type: 'toevoegen',
     naam,
-    email: mailVoorLogin,
+    email,
     functie,
-    rol,
     budget,
+    aangevraagdDoor: toegang.email,
   });
-  redirect(res.ok ? '/portaal/medewerkers?ok=toegevoegd' : '/portaal/medewerkers?fout=opslaan');
+  redirect('/portaal/medewerkers?ok=verzoek');
 }
 
+/**
+ * Dient een verzoek in om een persoon te verwijderen. Verwijderen gaat niet meer
+ * direct: het verzoek gaat pas in als Jessi het goedkeurt.
+ */
 export async function verwijderMedewerkerAction(formData: FormData) {
-  await guardBeheren();
+  const toegang = await guardBeheren();
   const id = String(formData.get('id') ?? '');
-  if (id) await verwijderMedewerker(id);
-  redirect('/portaal/medewerkers?ok=verwijderd');
+  const naam = String(formData.get('naam') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim();
+  if (id) {
+    await maakVerzoek({
+      organisatieId: toegang.organisatieId!,
+      type: 'verwijderen',
+      medewerkerId: id,
+      naam,
+      email,
+      aangevraagdDoor: toegang.email,
+    });
+  }
+  redirect('/portaal/medewerkers?ok=verzoek');
 }
 
 export async function bewaarBudget(formData: FormData) {

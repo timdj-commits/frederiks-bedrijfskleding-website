@@ -8,6 +8,7 @@ import { formatEuro } from '@/lib/format';
 import ConfirmSubmit from '@/components/ConfirmSubmit';
 import PortaalNav from '../PortaalNav';
 import MedewerkersLijst, { type MedewerkerRij } from './MedewerkersLijst';
+import { listMijnVerzoeken } from '@/lib/portaal/verzoeken';
 import {
   nieuweMedewerker,
   verwijderMedewerkerAction,
@@ -35,6 +36,7 @@ const rolLabel: Record<PortaalRol, string> = {
 const meldingen: Record<string, { soort: 'ok' | 'fout'; tekst: string }> = {
   toegevoegd: { soort: 'ok', tekst: 'De medewerker is toegevoegd.' },
   verwijderd: { soort: 'ok', tekst: 'De medewerker is verwijderd.' },
+  verzoek: { soort: 'ok', tekst: 'Je verzoek is ingediend. Jessi neemt het in behandeling.' },
   budget: { soort: 'ok', tekst: 'Het budget is opgeslagen.' },
   maten: { soort: 'ok', tekst: 'De maten zijn opgeslagen.' },
   toegang: { soort: 'ok', tekst: 'De toegang is aangemaakt.' },
@@ -97,7 +99,12 @@ export default async function Medewerkers({
   const sp = await searchParams;
   const melding = sp?.ok ? meldingen[sp.ok] : sp?.fout ? meldingen[sp.fout] : null;
 
-  const [team, items, verbruik] = await Promise.all([listTeam(), getKledinglijn(), getVerbruik()]);
+  const [team, items, verbruik, verzoeken] = await Promise.all([
+    listTeam(),
+    getKledinglijn(),
+    getVerbruik(),
+    listMijnVerzoeken(),
+  ]);
   const matenPer: Record<string, Record<string, string>> = Object.fromEntries(
     await Promise.all(team.map(async (m) => [m.medewerkerId, await getMatenMap(m.medewerkerId)] as const)),
   );
@@ -123,11 +130,13 @@ export default async function Medewerkers({
           )}
           <form action={verwijderMedewerkerAction}>
             <input type="hidden" name="id" value={m.medewerkerId} />
+            <input type="hidden" name="naam" value={m.naam} />
+            <input type="hidden" name="email" value={m.email ?? ''} />
             <ConfirmSubmit
-              message={`Weet je zeker dat je ${m.naam} wilt verwijderen? Maten en budget gaan verloren.`}
+              message={`Verwijdering van ${m.naam} aanvragen? Jessi keurt dit verzoek eerst goed; daarna gaan de maten en het budget verloren.`}
               className="py-1 text-xs font-semibold text-warm hover:text-amber-700"
             >
-              Verwijderen
+              Verwijdering aanvragen
             </ConfirmSubmit>
           </form>
         </div>
@@ -292,33 +301,64 @@ export default async function Medewerkers({
 
         <div>
           <div className="rounded-2xl border border-line bg-white p-6 shadow-soft">
-            <h2 className="font-display text-lg font-extrabold text-ink-900">Medewerker toevoegen</h2>
+            <h2 className="font-display text-lg font-extrabold text-ink-900">Medewerker aanvragen</h2>
             <p className="mt-1 text-xs text-warm">
-              {magToegang
-                ? 'Vul een e-mailadres in om de medewerker meteen te laten inloggen. Zonder e-mail leg je alleen de persoon vast.'
-                : 'Leg de persoon, functie en een eventueel budget vast. Een login geven kan alleen de beheerder.'}
+              Je voegt zelf niemand meer direct toe. Je dient een verzoek in en Jessi keurt het goed; daarna
+              staat de medewerker in het overzicht. Vul de gegevens vast in, dan kan zij het meteen verwerken.
             </p>
             <form action={nieuweMedewerker} className="mt-4">
               <label className="block text-sm font-semibold text-ink-900">Naam</label>
               <input name="naam" required placeholder="Naam" className={veld} />
               <label className="mt-3 block text-sm font-semibold text-ink-900">Functie (optioneel)</label>
               <input name="functie" placeholder="bijv. monteur" className={veld} />
+              <label className="mt-3 block text-sm font-semibold text-ink-900">E-mail (optioneel)</label>
+              <input name="email" type="email" placeholder="naam@bedrijf.nl" className={veld} />
               <label className="mt-3 block text-sm font-semibold text-ink-900">Jaarbudget (optioneel)</label>
               <input name="budget" inputMode="decimal" placeholder="bijv. 250" className={veld} />
-              {magToegang && (
-                <>
-                  <label className="mt-3 block text-sm font-semibold text-ink-900">E-mail (voor login, optioneel)</label>
-                  <input name="email" type="email" placeholder="naam@bedrijf.nl" className={veld} />
-                  <label className="mt-3 block text-sm font-semibold text-ink-900">Rol bij login</label>
-                  <select name="rol" defaultValue="medewerker" className={veld}>
-                    <option value="medewerker">Medewerker</option>
-                    <option value="leidinggevende">Leidinggevende</option>
-                    <option value="beheerder">Beheerder</option>
-                  </select>
-                </>
-              )}
-              <button className="btn-primary mt-4 w-full justify-center">Toevoegen</button>
+              <button className="btn-primary mt-4 w-full justify-center">Verzoek indienen</button>
             </form>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-line bg-white p-6 shadow-soft">
+            <h2 className="font-display text-lg font-extrabold text-ink-900">Wijzigingsverzoeken</h2>
+            <p className="mt-1 text-xs text-warm">
+              Verzoeken die je hebt ingediend en hun status. Jessi handelt ze af in haar dashboard.
+            </p>
+            {verzoeken.length === 0 ? (
+              <p className="mt-4 text-sm text-warm">Je hebt nog geen verzoeken ingediend.</p>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {verzoeken.map((v) => {
+                  const typeLabel = v.type === 'toevoegen' ? 'Toevoegen' : 'Verwijderen';
+                  const statusLabel =
+                    v.status === 'goedgekeurd'
+                      ? 'Goedgekeurd'
+                      : v.status === 'afgewezen'
+                        ? 'Afgewezen'
+                        : 'Wacht op goedkeuring';
+                  const badge =
+                    v.status === 'goedgekeurd'
+                      ? 'border-green-300 bg-green-50 text-green-800'
+                      : v.status === 'afgewezen'
+                        ? 'border-amber-300 bg-amber-50 text-amber-700'
+                        : 'border-line bg-mist text-warm';
+                  return (
+                    <li
+                      key={v.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line p-3"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-ink-900">{v.naam ?? 'Onbekend'}</p>
+                        <p className="text-xs text-warm">{typeLabel}</p>
+                      </div>
+                      <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${badge}`}>
+                        {statusLabel}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </div>
       </div>

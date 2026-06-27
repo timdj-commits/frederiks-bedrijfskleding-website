@@ -7,7 +7,8 @@ import { getMijnToegang } from '@/lib/portaal/team';
 import { getWachtendeOrders } from '@/lib/portaal/goedkeuringen';
 import { getSpaarInstellingen, getSpaarsaldo } from '@/lib/kms/sparen';
 import { formatEuro, formatGetal } from '@/lib/format';
-import { portaalLogout } from './actions';
+import { portaalLogout, markeerMeldingenGelezenActie } from './actions';
+import { listMijnMeldingen } from '@/lib/portaal/verzoeken';
 import PortaalNav from './PortaalNav';
 
 export const metadata: Metadata = { title: 'Klantportaal', robots: { index: false, follow: false } };
@@ -52,11 +53,13 @@ export default async function Portaal() {
 
   const toegang = await getMijnToegang();
   const magKeuren = toegang.rol === 'beheerder' || toegang.rol === 'leidinggevende';
-  const [items, wachtend, spaarInstellingen] = await Promise.all([
+  const [items, wachtend, spaarInstellingen, meldingen] = await Promise.all([
     getKledinglijn(),
     magKeuren ? getWachtendeOrders() : Promise.resolve([]),
     getSpaarInstellingen(),
+    listMijnMeldingen(),
   ]);
+  const ongelezen = meldingen.filter((m) => !m.gelezen);
   const spaarsaldo = spaarInstellingen.actief ? await getSpaarsaldo(org.id) : null;
   const spaarMijlpaal = spaarsaldo
     ? (() => {
@@ -83,6 +86,22 @@ export default async function Portaal() {
       </div>
 
       <PortaalNav rol={toegang.rol} actief="/portaal" />
+
+      {ongelezen.length > 0 && (
+        <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-soft">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-700">Berichten</p>
+              <ul className="mt-2 space-y-1.5 text-sm text-ink-800">
+                {ongelezen.map((m) => <li key={m.id}>{m.tekst}</li>)}
+              </ul>
+            </div>
+            <form action={markeerMeldingenGelezenActie}>
+              <button type="submit" className="shrink-0 rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100">Gelezen</button>
+            </form>
+          </div>
+        </section>
+      )}
 
       <section className="mt-8 rounded-2xl border border-line bg-white p-5 shadow-soft sm:p-6">
         <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-700">Zo bestel je</p>
