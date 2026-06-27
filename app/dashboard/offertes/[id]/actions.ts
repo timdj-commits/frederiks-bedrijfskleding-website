@@ -9,6 +9,7 @@ import {
   werkRegel,
   verwijderRegel,
   maakOrderVanOfferte,
+  voegPakketAlsRegels,
   getOfferte,
   offerteTotalen,
 } from '@/lib/kms/offertes';
@@ -100,6 +101,17 @@ export async function verwijderRegelActie(formData: FormData) {
   const regelId = String(formData.get('regelId') ?? '').trim();
   if (regelId) await verwijderRegel(regelId);
   redirect('/dashboard/offertes/' + offerteId);
+}
+
+export async function voegPakketActie(formData: FormData) {
+  if (!(await dashAuthed())) redirect('/dashboard');
+  const offerteId = String(formData.get('offerteId') ?? '').trim();
+  const pakketId = String(formData.get('pakketId') ?? '').trim();
+  if (offerteId && pakketId) {
+    const aantal = await voegPakketAlsRegels(offerteId, pakketId);
+    await logAudit('offerte_pakket_toegevoegd', { entiteit: 'offertes', entiteitId: offerteId, details: { pakketId, aantal } });
+  }
+  redirect('/dashboard/offertes/' + offerteId + '?ok=toegevoegd');
 }
 
 export async function maakOrderVanOfferteActie(formData: FormData) {

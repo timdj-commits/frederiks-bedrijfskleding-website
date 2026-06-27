@@ -322,6 +322,42 @@ export async function getKlantProductOpties(orgId: string | null): Promise<Offer
  * (nettoprijs na korting) als orderregels, en zet de offerte op 'geaccepteerd'. Geeft het
  * order-id terug, of null als er geen klant aan de offerte hangt.
  */
+/**
+ * Voegt alle producten van een klant-pakket in een keer toe als offerteregels.
+ * Omschrijving, verkoopprijs en inkoopprijs komen uit de gekoppelde variant/product,
+ * net als bij de losse productkiezer. Geeft het aantal toegevoegde regels terug.
+ */
+export async function voegPakketAlsRegels(offerteId: string, pakketId: string): Promise<number> {
+  const sb = kmsAdmin(); if (!sb) return 0;
+  const { data: ppData } = await sb
+    .from('pakket_producten')
+    .select('product_id, variant_id, aantal, prod:producten(naam), var:product_varianten(maat, kleur, verkoopprijs, inkoopprijs)')
+    .eq('pakket_id', pakketId);
+  const pp = (ppData as unknown as {
+    product_id: string;
+    variant_id: string | null;
+    aantal: number;
+    prod: { naam: string } | null;
+    var: { maat: string | null; kleur: string | null; verkoopprijs: number | null; inkoopprijs: number | null } | null;
+  }[]) ?? [];
+  if (pp.length === 0) return 0;
+
+  const rows = pp.map((r) => {
+    const naam = r.prod?.naam ?? 'Product';
+    const variantLabel = r.var ? [r.var.maat, r.var.kleur].filter(Boolean).join(', ') : '';
+    return {
+      offerte_id: offerteId,
+      omschrijving: variantLabel ? `${naam}, ${variantLabel}` : naam,
+      aantal: Math.max(1, Math.round(Number(r.aantal) || 1)),
+      stukprijs: r.var?.verkoopprijs != null ? Number(r.var.verkoopprijs) : 0,
+      korting_pct: 0,
+      inkoop: r.var?.inkoopprijs != null ? Number(r.var.inkoopprijs) : null,
+    };
+  });
+  const { error } = await sb.from('offerteregels').insert(rows);
+  return error ? 0 : rows.length;
+}
+
 export async function maakOrderVanOfferte(offerteId: string): Promise<string | null> {
   const off = await getOfferte(offerteId);
   if (!off || !off.organisatie_id) return null;

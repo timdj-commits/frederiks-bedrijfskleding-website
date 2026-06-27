@@ -13,8 +13,10 @@ import {
   verwijderRegelActie,
   mailOfferteActie,
   maakOrderVanOfferteActie,
+  voegPakketActie,
 } from './actions';
 import RegelToevoegen from './RegelToevoegen';
+import { listPakketten } from '@/lib/kms/pakketten';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Offerte', robots: { index: false, follow: false } };
@@ -68,6 +70,7 @@ export default async function OfferteDetailPage({ params, searchParams }: { para
 
   const { subtotaal, korting, btw, totaal, marge } = offerteTotalen(offerte.regels, offerte.btw_pct);
   const opties = await getKlantProductOpties(offerte.organisatie_id);
+  const pakketten = offerte.organisatie_id ? await listPakketten(offerte.organisatie_id) : [];
   const verlopen = !!offerte.geldig_tot && offerte.status !== 'geaccepteerd' && offerte.status !== 'afgewezen' && new Date(offerte.geldig_tot) < new Date(new Date().toDateString());
 
   return (
@@ -231,7 +234,23 @@ export default async function OfferteDetailPage({ params, searchParams }: { para
             )}
           </div>
 
-          <RegelToevoegen offerteId={offerte.id} opties={opties} />
+          <div className="flex flex-col gap-6">
+            {pakketten.length > 0 && (
+              <div className="rounded-2xl border border-line bg-white p-6 shadow-soft">
+                <h3 className="font-display text-base font-bold text-ink-900">Vast pakket toevoegen</h3>
+                <p className="mt-1 text-xs text-warm">Voeg in een keer alle producten van een klant-pakket toe als regels.</p>
+                <form action={voegPakketActie} className="mt-3">
+                  <input type="hidden" name="offerteId" value={offerte.id} />
+                  <select name="pakketId" required defaultValue="" className={inputCls}>
+                    <option value="">Kies een pakket</option>
+                    {pakketten.map((p) => <option key={p.id} value={p.id}>{p.naam}</option>)}
+                  </select>
+                  <button type="submit" className="mt-2 w-full rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Pakket toevoegen</button>
+                </form>
+              </div>
+            )}
+            <RegelToevoegen offerteId={offerte.id} opties={opties} />
+          </div>
         </div>
       </section>
     </main>

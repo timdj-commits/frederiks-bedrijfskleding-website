@@ -1,7 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { dashAuthed } from '@/lib/kms/adminClient';
-import { maakFactuurVanOrder, maakLegeFactuur, zetBoekhouderEmail, mailFacturenNaarBoekhouder } from '@/lib/kms/facturen';
+import { maakFactuurVanOrder, maakLegeFactuur, zetBoekhouderEmail, mailFacturenNaarBoekhouder, listFactureerbareOrders } from '@/lib/kms/facturen';
 import { logAudit } from '@/lib/kms/audit';
 
 export async function factuurVanOrder(formData: FormData) {
@@ -11,6 +11,18 @@ export async function factuurVanOrder(formData: FormData) {
   const id = await maakFactuurVanOrder(orderId);
   if (id) redirect('/dashboard/facturen/' + id);
   redirect('/dashboard/facturen');
+}
+
+export async function factureerAlleActie() {
+  if (!(await dashAuthed())) redirect('/dashboard');
+  const orders = await listFactureerbareOrders();
+  let aantal = 0;
+  for (const o of orders) {
+    const id = await maakFactuurVanOrder(o.id);
+    if (id) aantal++;
+  }
+  await logAudit('facturen_bulk_aangemaakt', { entiteit: 'facturen', details: { aantal } });
+  redirect(`/dashboard/facturen?ok=bulk&aantal=${aantal}`);
 }
 
 export async function legeFactuur(formData: FormData) {

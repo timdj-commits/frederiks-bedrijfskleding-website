@@ -5,7 +5,7 @@ import { listFacturenPaged, listOrganisaties, listFactureerbareOrders, getBoekho
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
 import SortableTh from '@/components/dashboard/SortableTh';
 import EmptyState from '@/components/dashboard/EmptyState';
-import { factuurVanOrder, legeFactuur, zetBoekhouderEmailActie, mailFacturenActie } from './actions';
+import { factuurVanOrder, legeFactuur, zetBoekhouderEmailActie, mailFacturenActie, factureerAlleActie } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Facturen', robots: { index: false, follow: false } };
@@ -25,7 +25,7 @@ const statusBadge: Record<string, string> = {
   betaald: 'bg-green-100 text-green-800',
 };
 
-export default async function FacturenPage({ searchParams }: { searchParams: Promise<{ status?: string; order?: string; ok?: string; gemaild?: string; mailfout?: string; pagina?: string; sort?: string; dir?: string }> }) {
+export default async function FacturenPage({ searchParams }: { searchParams: Promise<{ status?: string; order?: string; ok?: string; gemaild?: string; mailfout?: string; pagina?: string; sort?: string; dir?: string; aantal?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
   const sb = kmsAdmin();
 
@@ -41,7 +41,7 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
     );
   }
 
-  const { status, order, ok, gemaild, mailfout, pagina, sort, dir } = await searchParams;
+  const { status, order, ok, gemaild, mailfout, pagina, sort, dir, aantal } = await searchParams;
   const huidigePagina = Math.max(1, Number(pagina) || 1);
   const richting = dir === 'asc' ? 'asc' : 'desc';
   const [{ rijen: facturen, totaal }, organisaties, factureerbaar, boekhouderEmail] = await Promise.all([
@@ -71,6 +71,9 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
       )}
       {ok === 'boekhouder' && (
         <p className="mt-4 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-800">E-mailadres van de boekhouder opgeslagen.</p>
+      )}
+      {ok === 'bulk' && (
+        <p className="mt-4 rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-800">{Number(aantal) || 0} factuur(en) aangemaakt uit afgeronde orders.</p>
       )}
 
       <div className="mt-6 rounded-2xl border border-line bg-white p-6 shadow-soft">
@@ -184,6 +187,11 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
                   </select>
                 </div>
                 <button type="submit" className="self-start rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Factuur aanmaken</button>
+              </form>
+            )}
+            {factureerbaar.length > 1 && (
+              <form action={factureerAlleActie} className="mt-3 border-t border-line pt-3">
+                <button type="submit" className="w-full rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100">Factureer alle {factureerbaar.length} orders in een keer</button>
               </form>
             )}
           </div>
