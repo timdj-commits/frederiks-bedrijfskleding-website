@@ -96,16 +96,21 @@ export async function listOrders(status?: string): Promise<OrderMetKlant[]> {
   });
 }
 
-/** Eén pagina orders (nieuwste eerst) met optioneel statusfilter, plus het totaal aantal rijen voor paginering. */
-export async function listOrdersPaged(opts: { pagina: number; perPagina: number; status?: string }): Promise<{ rijen: OrderMetKlant[]; totaal: number }> {
+/** Toegestane sorteerkolommen (echte DB-kolommen op orders). */
+const SORTEERKOLOMMEN = ['ordernummer', 'besteldatum', 'bedrag', 'status', 'goedkeuring_status'] as const;
+
+/** Eén pagina orders met optioneel statusfilter en sortering, plus het totaal aantal rijen voor paginering. */
+export async function listOrdersPaged(opts: { pagina: number; perPagina: number; status?: string; sort?: string; dir?: 'asc' | 'desc' }): Promise<{ rijen: OrderMetKlant[]; totaal: number }> {
   const sb = kmsAdmin(); if (!sb) return { rijen: [], totaal: 0 };
   const pagina = Math.max(1, opts.pagina);
   const from = (pagina - 1) * opts.perPagina;
   const to = from + opts.perPagina - 1;
+  const kolom = (SORTEERKOLOMMEN as readonly string[]).includes(opts.sort ?? '') ? (opts.sort as string) : 'ordernummer';
+  const oplopend = opts.dir === 'asc' ? true : false;
   let q = sb
     .from('orders')
     .select('*, organisaties(naam), medewerkers(naam)', { count: 'exact' })
-    .order('ordernummer', { ascending: false });
+    .order(kolom, { ascending: oplopend });
   if (opts.status && opts.status.trim()) q = q.eq('status', opts.status.trim());
   const { data, count } = await q.range(from, to);
   const rows = (data as unknown as (Order & { organisaties: { naam: string } | null; medewerkers: { naam: string } | null })[]) ?? [];

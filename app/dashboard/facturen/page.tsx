@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { listFacturenPaged, listOrganisaties, listFactureerbareOrders, getBoekhouderEmail, FACTUUR_STATUSSEN } from '@/lib/kms/facturen';
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
+import SortableTh from '@/components/dashboard/SortableTh';
+import EmptyState from '@/components/dashboard/EmptyState';
 import { factuurVanOrder, legeFactuur, zetBoekhouderEmailActie, mailFacturenActie } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +25,7 @@ const statusBadge: Record<string, string> = {
   betaald: 'bg-green-100 text-green-800',
 };
 
-export default async function FacturenPage({ searchParams }: { searchParams: Promise<{ status?: string; order?: string; ok?: string; gemaild?: string; mailfout?: string; pagina?: string }> }) {
+export default async function FacturenPage({ searchParams }: { searchParams: Promise<{ status?: string; order?: string; ok?: string; gemaild?: string; mailfout?: string; pagina?: string; sort?: string; dir?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
   const sb = kmsAdmin();
 
@@ -39,10 +41,11 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
     );
   }
 
-  const { status, order, ok, gemaild, mailfout, pagina } = await searchParams;
+  const { status, order, ok, gemaild, mailfout, pagina, sort, dir } = await searchParams;
   const huidigePagina = Math.max(1, Number(pagina) || 1);
+  const richting = dir === 'asc' ? 'asc' : 'desc';
   const [{ rijen: facturen, totaal }, organisaties, factureerbaar, boekhouderEmail] = await Promise.all([
-    listFacturenPaged({ pagina: huidigePagina, perPagina: PER_PAGINA, status }),
+    listFacturenPaged({ pagina: huidigePagina, perPagina: PER_PAGINA, status, sort, dir: richting }),
     listOrganisaties(),
     listFactureerbareOrders(),
     getBoekhouderEmail(),
@@ -50,6 +53,7 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
   const voorgeselecteerd = order && factureerbaar.some((o) => o.id === order) ? order : '';
   const aantalPaginas = Math.max(1, Math.ceil(totaal / PER_PAGINA));
   const statusQs = status ? `&status=${encodeURIComponent(status)}` : '';
+  const sorteerQs = `${sort ? `&sort=${encodeURIComponent(sort)}` : ''}${dir ? `&dir=${encodeURIComponent(richting)}` : ''}`;
 
   return (
     <main className="container-x py-12">
@@ -99,7 +103,7 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {facturen.length === 0 ? (
-            <p className="rounded-xl border border-line bg-mist px-5 py-4 text-sm text-warm">Geen facturen gevonden. Maak er rechts een aan.</p>
+            <EmptyState tekst="Geen facturen gevonden. Maak er rechts een aan." />
           ) : (
             <form action={mailFacturenActie}>
               <div className="mb-3 flex justify-end">
@@ -110,11 +114,12 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
                   <thead className="border-b border-line bg-mist text-xs uppercase tracking-wide text-warm">
                     <tr>
                       <th className="px-4 py-3"><span className="sr-only">Selecteren</span></th>
-                      <th className="px-4 py-3">Nummer</th>
+                      <SortableTh label="Nummer" col="factuurnummer" />
                       <th className="px-4 py-3">Klant</th>
-                      <th className="px-4 py-3">Datum</th>
-                      <th className="px-4 py-3">Bedrag incl.</th>
-                      <th className="px-4 py-3">Status</th>
+                      <SortableTh label="Datum" col="factuurdatum" />
+                      <SortableTh label="Vervaldatum" col="vervaldatum" />
+                      <SortableTh label="Bedrag incl." col="bedrag_incl" />
+                      <SortableTh label="Status" col="status" />
                       <th className="px-4 py-3">Boekhouder</th>
                     </tr>
                   </thead>
@@ -129,6 +134,7 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
                         </td>
                         <td className="px-4 py-3 text-ink-900">{f.organisatie_naam || '-'}</td>
                         <td className="whitespace-nowrap px-4 py-3 text-warm">{fmt(f.factuurdatum)}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-warm">{fmt(f.vervaldatum)}</td>
                         <td className="whitespace-nowrap px-4 py-3 text-warm">{f.bedrag_incl != null ? euro(Number(f.bedrag_incl)) : '-'}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge[f.status] ?? 'bg-ink-100 text-ink-600'}`}>{f.status}</span>
@@ -150,11 +156,11 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
           {aantalPaginas > 1 && (
             <nav className="mt-4 flex items-center justify-between gap-4 text-sm" aria-label="Paginering">
               {huidigePagina > 1 ? (
-                <Link href={`/dashboard/facturen?pagina=${huidigePagina - 1}${statusQs}`} className="font-semibold text-warm hover:text-ink-800">Vorige</Link>
+                <Link href={`/dashboard/facturen?pagina=${huidigePagina - 1}${statusQs}${sorteerQs}`} className="font-semibold text-warm hover:text-ink-800">Vorige</Link>
               ) : <span />}
               <span className="text-warm">Pagina {huidigePagina} van {aantalPaginas}</span>
               {huidigePagina < aantalPaginas ? (
-                <Link href={`/dashboard/facturen?pagina=${huidigePagina + 1}${statusQs}`} className="font-semibold text-warm hover:text-ink-800">Volgende</Link>
+                <Link href={`/dashboard/facturen?pagina=${huidigePagina + 1}${statusQs}${sorteerQs}`} className="font-semibold text-warm hover:text-ink-800">Volgende</Link>
               ) : <span />}
             </nav>
           )}

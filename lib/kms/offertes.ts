@@ -112,15 +112,21 @@ export async function listOffertesPaged(opts: {
   pagina: number;
   perPagina: number;
   status?: string;
+  sort?: string;
+  dir?: 'asc' | 'desc';
 }): Promise<{ rijen: OfferteMetTotaal[]; totaal: number }> {
   const sb = kmsAdmin(); if (!sb) return { rijen: [], totaal: 0 };
   const pagina = Math.max(1, opts.pagina);
   const from = (pagina - 1) * opts.perPagina;
   const to = from + opts.perPagina - 1;
+  // Alleen sorteren op echte DB-kolommen. Het totaalbedrag wordt in geheugen berekend, dus dat staat hier bewust niet bij.
+  const sorteerbaar = ['offertenummer', 'created_at', 'status', 'geldig_tot'];
+  const kolom = opts.sort && sorteerbaar.includes(opts.sort) ? opts.sort : 'created_at';
+  const oplopend = opts.dir === 'asc' ? true : false;
   let q = sb
     .from('offertes')
     .select('*, organisaties(naam)', { count: 'exact' })
-    .order('created_at', { ascending: false });
+    .order(kolom, { ascending: oplopend });
   if (opts.status && opts.status.trim()) q = q.eq('status', opts.status.trim());
   const { data, count } = await q.range(from, to);
   const rows = (data as unknown as (Offerte & { organisaties: { naam: string } | null })[]) ?? [];

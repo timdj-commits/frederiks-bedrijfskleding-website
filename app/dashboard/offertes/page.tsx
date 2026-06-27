@@ -5,6 +5,8 @@ import { listOffertesPaged, OFFERTE_STATUSSEN } from '@/lib/kms/offertes';
 import { listOrganisaties } from '@/lib/portaalAdmin';
 import { formatEuro, formatDatum } from '@/lib/format';
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
+import SortableTh from '@/components/dashboard/SortableTh';
+import EmptyState from '@/components/dashboard/EmptyState';
 import { maakOfferteActie } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +22,7 @@ const statusBadge: Record<string, string> = {
   afgewezen: 'bg-red-100 text-red-800',
 };
 
-export default async function OffertesPage({ searchParams }: { searchParams: Promise<{ status?: string; pagina?: string }> }) {
+export default async function OffertesPage({ searchParams }: { searchParams: Promise<{ status?: string; pagina?: string; sort?: string; dir?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
   const sb = kmsAdmin();
 
@@ -36,15 +38,17 @@ export default async function OffertesPage({ searchParams }: { searchParams: Pro
     );
   }
 
-  const { status, pagina } = await searchParams;
+  const { status, pagina, sort, dir } = await searchParams;
   const huidigePagina = Math.max(1, Number(pagina) || 1);
+  const richting = dir === 'asc' ? 'asc' : 'desc';
   // Totaalbedrag per offerte komt nu in één query mee (geen N+1 meer per rij).
   const [{ rijen: offertes, totaal }, organisaties] = await Promise.all([
-    listOffertesPaged({ pagina: huidigePagina, perPagina: PER_PAGINA, status }),
+    listOffertesPaged({ pagina: huidigePagina, perPagina: PER_PAGINA, status, sort, dir: richting }),
     listOrganisaties(),
   ]);
   const aantalPaginas = Math.max(1, Math.ceil(totaal / PER_PAGINA));
   const statusQs = status ? `&status=${encodeURIComponent(status)}` : '';
+  const sorteerQs = `${sort ? `&sort=${encodeURIComponent(sort)}` : ''}${dir ? `&dir=${encodeURIComponent(richting)}` : ''}`;
 
   return (
     <main className="container-x py-12">
@@ -72,16 +76,16 @@ export default async function OffertesPage({ searchParams }: { searchParams: Pro
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {offertes.length === 0 ? (
-            <p className="rounded-xl border border-line bg-mist px-5 py-4 text-sm text-warm">Geen offertes gevonden. Maak er rechts een aan.</p>
+            <EmptyState tekst="Geen offertes gevonden. Maak er rechts een aan." />
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-line bg-mist text-xs uppercase tracking-wide text-warm">
                   <tr>
-                    <th className="px-4 py-3">Nummer</th>
+                    <SortableTh label="Nummer" col="offertenummer" />
                     <th className="px-4 py-3">Klant</th>
-                    <th className="px-4 py-3">Datum</th>
-                    <th className="px-4 py-3">Status</th>
+                    <SortableTh label="Datum" col="created_at" />
+                    <SortableTh label="Status" col="status" />
                     <th className="px-4 py-3 text-right">Totaal</th>
                   </tr>
                 </thead>
@@ -108,11 +112,11 @@ export default async function OffertesPage({ searchParams }: { searchParams: Pro
           {aantalPaginas > 1 && (
             <nav className="mt-4 flex items-center justify-between gap-4 text-sm" aria-label="Paginering">
               {huidigePagina > 1 ? (
-                <Link href={`/dashboard/offertes?pagina=${huidigePagina - 1}${statusQs}`} className="font-semibold text-warm hover:text-ink-800">Vorige</Link>
+                <Link href={`/dashboard/offertes?pagina=${huidigePagina - 1}${statusQs}${sorteerQs}`} className="font-semibold text-warm hover:text-ink-800">Vorige</Link>
               ) : <span />}
               <span className="text-warm">Pagina {huidigePagina} van {aantalPaginas}</span>
               {huidigePagina < aantalPaginas ? (
-                <Link href={`/dashboard/offertes?pagina=${huidigePagina + 1}${statusQs}`} className="font-semibold text-warm hover:text-ink-800">Volgende</Link>
+                <Link href={`/dashboard/offertes?pagina=${huidigePagina + 1}${statusQs}${sorteerQs}`} className="font-semibold text-warm hover:text-ink-800">Volgende</Link>
               ) : <span />}
             </nav>
           )}

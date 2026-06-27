@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { listOrdersPaged, ORDER_STATUSSEN } from '@/lib/kms/orders';
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
+import SortableTh from '@/components/dashboard/SortableTh';
+import EmptyState from '@/components/dashboard/EmptyState';
 import { nieuweOrder, wijzigOrderStatusInline } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +36,7 @@ const goedkeurBadge: Record<string, string> = {
   afgewezen: 'bg-ink-100 text-ink-500',
 };
 
-export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; pagina?: string }> }) {
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; pagina?: string; sort?: string; dir?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
   const sb = kmsAdmin();
 
@@ -50,10 +52,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     );
   }
 
-  const { status, pagina } = await searchParams;
+  const { status, pagina, sort, dir } = await searchParams;
   const huidigePagina = Math.max(1, Number(pagina) || 1);
+  const richting: 'asc' | 'desc' = dir === 'asc' ? 'asc' : 'desc';
   const [{ rijen: orders, totaal }, { data: orgData }, { data: medewData }] = await Promise.all([
-    listOrdersPaged({ pagina: huidigePagina, perPagina: PER_PAGINA, status }),
+    listOrdersPaged({ pagina: huidigePagina, perPagina: PER_PAGINA, status, sort, dir: richting }),
     sb.from('organisaties').select('id, naam').order('naam'),
     sb.from('medewerkers').select('id, naam').order('naam'),
   ]);
@@ -61,9 +64,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const medewerkers = (medewData as { id: string; naam: string }[]) ?? [];
   const aantalPaginas = Math.max(1, Math.ceil(totaal / PER_PAGINA));
   const statusQs = status ? `&status=${encodeURIComponent(status)}` : '';
+  const sortQs = sort ? `&sort=${encodeURIComponent(sort)}&dir=${richting}` : '';
   // URL van de huidige weergave: na een inline statuswijziging keren we hier terug
-  // zodat statusfilter en pagina behouden blijven.
-  const huidigeUrl = `/dashboard/orders?pagina=${huidigePagina}${statusQs}`;
+  // zodat statusfilter, sortering en pagina behouden blijven.
+  const huidigeUrl = `/dashboard/orders?pagina=${huidigePagina}${statusQs}${sortQs}`;
 
   return (
     <main className="container-x py-12">
@@ -91,18 +95,18 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {orders.length === 0 ? (
-            <p className="rounded-xl border border-line bg-mist px-5 py-4 text-sm text-warm">Geen orders gevonden. Maak er rechts een aan.</p>
+            <EmptyState tekst="Geen orders gevonden. Maak er rechts een aan." />
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-line bg-mist text-xs uppercase tracking-wide text-warm">
                   <tr>
-                    <th className="px-4 py-3">Nr.</th>
+                    <SortableTh label="Nr." col="ordernummer" />
                     <th className="px-4 py-3">Klant</th>
-                    <th className="px-4 py-3">Datum</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Bedrag</th>
-                    <th className="hidden px-4 py-3 sm:table-cell">Goedkeuring</th>
+                    <SortableTh label="Datum" col="besteldatum" />
+                    <SortableTh label="Status" col="status" />
+                    <SortableTh label="Bedrag" col="bedrag" />
+                    <SortableTh label="Goedkeuring" col="goedkeuring_status" className="hidden sm:table-cell" />
                   </tr>
                 </thead>
                 <tbody>
@@ -144,11 +148,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           {aantalPaginas > 1 && (
             <nav className="mt-4 flex items-center justify-between gap-4 text-sm" aria-label="Paginering">
               {huidigePagina > 1 ? (
-                <Link href={`/dashboard/orders?pagina=${huidigePagina - 1}${statusQs}`} className="font-semibold text-warm hover:text-ink-800">Vorige</Link>
+                <Link href={`/dashboard/orders?pagina=${huidigePagina - 1}${statusQs}${sortQs}`} className="font-semibold text-warm hover:text-ink-800">Vorige</Link>
               ) : <span />}
               <span className="text-warm">Pagina {huidigePagina} van {aantalPaginas}</span>
               {huidigePagina < aantalPaginas ? (
-                <Link href={`/dashboard/orders?pagina=${huidigePagina + 1}${statusQs}`} className="font-semibold text-warm hover:text-ink-800">Volgende</Link>
+                <Link href={`/dashboard/orders?pagina=${huidigePagina + 1}${statusQs}${sortQs}`} className="font-semibold text-warm hover:text-ink-800">Volgende</Link>
               ) : <span />}
             </nav>
           )}

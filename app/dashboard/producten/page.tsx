@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { listProductenPaged, listMerken, listLeveranciers } from '@/lib/kms/producten';
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
+import SortableTh from '@/components/dashboard/SortableTh';
+import EmptyState from '@/components/dashboard/EmptyState';
 import { nieuwProduct } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +13,7 @@ export const metadata = { title: 'Producten', robots: { index: false, follow: fa
 const inputCls = 'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200';
 const PER_PAGINA = 25;
 
-export default async function ProductenPage({ searchParams }: { searchParams: Promise<{ zoek?: string; merk?: string; pagina?: string }> }) {
+export default async function ProductenPage({ searchParams }: { searchParams: Promise<{ zoek?: string; merk?: string; pagina?: string; sort?: string; dir?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
   const sb = kmsAdmin();
 
@@ -27,15 +29,16 @@ export default async function ProductenPage({ searchParams }: { searchParams: Pr
     );
   }
 
-  const { zoek, merk, pagina } = await searchParams;
+  const { zoek, merk, pagina, sort, dir } = await searchParams;
   const huidigePagina = Math.max(1, Number(pagina) || 1);
+  const dirParam = dir === 'asc' ? 'asc' : dir === 'desc' ? 'desc' : undefined;
   const [{ rijen: producten, totaal }, merken, leveranciers] = await Promise.all([
-    listProductenPaged({ pagina: huidigePagina, perPagina: PER_PAGINA, zoek, merk }),
+    listProductenPaged({ pagina: huidigePagina, perPagina: PER_PAGINA, zoek, merk, sort, dir: dirParam }),
     listMerken(),
     listLeveranciers(),
   ]);
   const aantalPaginas = Math.max(1, Math.ceil(totaal / PER_PAGINA));
-  const filterQs = `${zoek ? `&zoek=${encodeURIComponent(zoek)}` : ''}${merk ? `&merk=${encodeURIComponent(merk)}` : ''}`;
+  const filterQs = `${zoek ? `&zoek=${encodeURIComponent(zoek)}` : ''}${merk ? `&merk=${encodeURIComponent(merk)}` : ''}${sort ? `&sort=${encodeURIComponent(sort)}` : ''}${dirParam ? `&dir=${dirParam}` : ''}`;
 
   return (
     <main className="container-x py-12">
@@ -74,15 +77,15 @@ export default async function ProductenPage({ searchParams }: { searchParams: Pr
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           {producten.length === 0 ? (
-            <p className="rounded-xl border border-line bg-mist px-5 py-4 text-sm text-warm">Geen producten gevonden. Voeg er rechts een toe.</p>
+            <EmptyState tekst="Geen producten gevonden. Voeg er rechts een toe." />
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-line bg-mist text-xs uppercase tracking-wide text-warm">
                   <tr>
-                    <th className="px-4 py-3">Naam</th>
-                    <th className="px-4 py-3">Merk</th>
-                    <th className="px-4 py-3">Categorie</th>
+                    <SortableTh label="Naam" col="naam" />
+                    <SortableTh label="Merk" col="merk" />
+                    <SortableTh label="Categorie" col="categorie" />
                     <th className="px-4 py-3">Varianten</th>
                     <th className="px-4 py-3">Status</th>
                   </tr>
