@@ -11,6 +11,7 @@ const OK_TEKSTEN: Record<string, string> = {
   verwijderd: 'Verwijderd.',
   bijgewerkt: 'Bijgewerkt.',
   'uit-offerte': 'Order aangemaakt uit de offerte.',
+  betaald: 'Gemarkeerd als betaald.',
 };
 const FOUT_TEKSTEN: Record<string, string> = {
   order: 'Kon geen order maken. Koppel eerst een klant.',

@@ -14,6 +14,7 @@ export type Drukproef = {
   id: string;
   organisatie_id: string;
   product_id: string | null;
+  order_id: string | null;
   naam: string;
   type: string;
   kleur: number;
@@ -34,6 +35,7 @@ export type DrukproefMetKlant = Drukproef & { organisatie_naam: string | null };
 export type DrukproefVelden = {
   naam: string;
   product_id?: string | null;
+  order_id?: string | null;
   type?: string;
   kleur?: number;
   techniek?: string;
@@ -47,6 +49,32 @@ export async function listDrukproevenVoorKlant(orgId: string): Promise<Drukproef
   const sb = kmsAdmin(); if (!sb) return [];
   const { data } = await sb.from('drukproeven').select('*').eq('organisatie_id', orgId).order('created_at', { ascending: false });
   return (data as Drukproef[]) ?? [];
+}
+
+/** De drukproeven die aan een order hangen (voor de drukproef-sectie op de order). */
+export async function listDrukproevenVoorOrder(orderId: string): Promise<Drukproef[]> {
+  const sb = kmsAdmin(); if (!sb) return [];
+  const { data } = await sb.from('drukproeven').select('*').eq('order_id', orderId).order('created_at', { ascending: false });
+  return (data as Drukproef[]) ?? [];
+}
+
+/**
+ * Zet een goedgekeurde drukproef die aan een order hangt door naar productie:
+ * de order krijgt status 'borduren' of 'bedrukken' op basis van de techniek, maar
+ * alleen vanuit een vroege fase (we overschrijven geen verder gevorderde status).
+ */
+export async function verwerkDrukproefGoedkeuring(drukproefId: string): Promise<void> {
+  const sb = kmsAdmin(); if (!sb) return;
+  const { data } = await sb.from('drukproeven').select('order_id, techniek, status').eq('id', drukproefId).maybeSingle();
+  const dp = data as { order_id: string | null; techniek: string | null; status: string } | null;
+  if (!dp || dp.status !== 'goedgekeurd' || !dp.order_id) return;
+
+  const { data: orderData } = await sb.from('orders').select('status').eq('id', dp.order_id).maybeSingle();
+  const huidige = (orderData as { status: string } | null)?.status;
+  const vroeg = ['concept', 'offerte_verstuurd', 'offerte_goedgekeurd', 'nog_bestellen', 'besteld', 'deellevering', 'compleet_geleverd'];
+  if (!huidige || !vroeg.includes(huidige)) return;
+  const nieuwe = dp.techniek === 'bedrukken' ? 'bedrukken' : 'borduren';
+  await sb.from('orders').update({ status: nieuwe }).eq('id', dp.order_id);
 }
 
 export async function getDrukproef(id: string): Promise<DrukproefMetKlant | null> {
@@ -66,6 +94,7 @@ export async function maakDrukproef(orgId: string, v: DrukproefVelden): Promise<
       organisatie_id: orgId,
       naam: v.naam.trim(),
       product_id: v.product_id ?? null,
+      order_id: v.order_id ?? null,
       type: v.type ?? 'tshirt',
       kleur: Number.isFinite(Number(v.kleur)) ? Math.round(Number(v.kleur)) : 0,
       techniek: v.techniek ?? 'borduren',
@@ -141,5 +170,6 @@ export async function beslisDrukproefViaToken(token: string, akkoord: boolean, o
     .update({ status: akkoord ? 'goedgekeurd' : 'afgekeurd', opmerking: opmerking?.trim() || null, behandeld_op: new Date().toISOString() })
     .eq('id', huidig.id);
   if (error) return null;
+  if (akkoord) await verwerkDrukproefGoedkeuring(huidig.id);
   return { ...huidig, status: akkoord ? 'goedgekeurd' : 'afgekeurd', opmerking: opmerking?.trim() || null };
 }

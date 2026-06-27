@@ -22,7 +22,7 @@ const statusBadge: Record<string, string> = {
   afgekeurd: 'bg-red-100 text-red-700',
 };
 
-export default async function DrukproevenPage({ searchParams }: { searchParams: Promise<{ org?: string; ok?: string }> }) {
+export default async function DrukproevenPage({ searchParams }: { searchParams: Promise<{ org?: string; ok?: string; order?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
   const sb = kmsAdmin();
 
@@ -38,7 +38,7 @@ export default async function DrukproevenPage({ searchParams }: { searchParams: 
     );
   }
 
-  const { org } = await searchParams;
+  const { org, order } = await searchParams;
   const orgs = await listOrganisaties();
   const gekozen = org && orgs.some((o) => o.id === org) ? org : '';
 
@@ -149,7 +149,7 @@ export default async function DrukproevenPage({ searchParams }: { searchParams: 
             )}
           </div>
 
-          <DrukproefMaker orgId={gekozen} klantLogoUrl={klant?.portaal_logo_url ?? null} />
+          <DrukproefMaker orgId={gekozen} klantLogoUrl={klant?.portaal_logo_url ?? null} orderId={order ?? null} />
         </div>
       )}
     </main>

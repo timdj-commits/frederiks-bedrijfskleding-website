@@ -6,7 +6,6 @@ import { getPortaalUser, getMijnOrganisatie } from '@/lib/portaal/queries';
 import { getMijnToegang } from '@/lib/portaal/team';
 import { getMijnOrders, leesbareStatus, leesbareGoedkeuring } from '@/lib/portaal/orders';
 import PortaalNav from '../PortaalNav';
-import { herbestelActie } from './actions';
 
 export const metadata: Metadata = { title: 'Mijn bestellingen', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -144,10 +143,14 @@ export default async function Bestellingen({ searchParams }: { searchParams: Pro
               )}
 
               {o.regels.length > 0 && (
-                <form action={herbestelActie} className="mt-5 border-t border-line pt-4">
-                  <input type="hidden" name="order_id" value={o.id} />
-                  <button type="submit" className="btn-secondary">Bestel opnieuw</button>
-                </form>
+                <div className="mt-5 border-t border-line pt-4">
+                  <Link href={`/portaal/webshop?herhaal=${o.id}`} className="btn-secondary inline-flex">
+                    Bestel opnieuw
+                  </Link>
+                  <p className="mt-2 text-xs text-warm">
+                    Je controleert de winkelwagen nog voordat je opnieuw bestelt.
+                  </p>
+                </div>
               )}
             </div>
           ))}

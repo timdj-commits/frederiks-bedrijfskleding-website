@@ -5,7 +5,7 @@ import { listFacturenPaged, listOrganisaties, listFactureerbareOrders, getBoekho
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
 import SortableTh from '@/components/dashboard/SortableTh';
 import EmptyState from '@/components/dashboard/EmptyState';
-import { factuurVanOrder, legeFactuur, zetBoekhouderEmailActie, mailFacturenActie, factureerAlleActie } from './actions';
+import { factuurVanOrder, legeFactuur, zetBoekhouderEmailActie, mailFacturenActie, factureerAlleActie, markeerBetaaldActie } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Facturen', robots: { index: false, follow: false } };
@@ -109,7 +109,8 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
             <EmptyState tekst="Geen facturen gevonden. Maak er rechts een aan." />
           ) : (
             <form action={mailFacturenActie}>
-              <div className="mb-3 flex justify-end">
+              <div className="mb-3 flex flex-wrap justify-end gap-2">
+                <button type="submit" formAction={markeerBetaaldActie} className="rounded-md border border-line px-4 py-2 text-sm font-semibold text-ink-700 hover:bg-mist">Markeer geselecteerde als betaald</button>
                 <button type="submit" className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">Mail geselecteerde naar boekhouder</button>
               </div>
               <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-soft">
@@ -146,7 +147,7 @@ export default async function FacturenPage({ searchParams }: { searchParams: Pro
                           {f.gemaild_op ? (
                             <span className="inline-block rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">Gemaild · {fmt(f.gemaild_op)}</span>
                           ) : (
-                            <span className="text-xs text-warm">—</span>
+                            <span className="text-xs text-warm">-</span>
                           )}
                         </td>
                       </tr>

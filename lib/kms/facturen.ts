@@ -53,6 +53,17 @@ export type Organisatie = {
 export type FactuurMetKlant = Factuur & { organisatie_naam: string | null };
 export type FactuurDetail = Factuur & { regels: Factuurregel[]; organisatie: Organisatie | null };
 
+/** De facturen die bij een order horen (voor de koppeling order <-> factuur). */
+export async function facturenVoorOrder(orderId: string): Promise<{ id: string; factuurnummer: string | null; status: string; bedrag_incl: number | null }[]> {
+  const sb = kmsAdmin(); if (!sb) return [];
+  const { data } = await sb
+    .from('facturen')
+    .select('id, factuurnummer, status, bedrag_incl')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: false });
+  return (data as { id: string; factuurnummer: string | null; status: string; bedrag_incl: number | null }[]) ?? [];
+}
+
 export type FactuurregelVelden = {
   omschrijving: string;
   aantal?: number;

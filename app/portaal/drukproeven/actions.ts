@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getPortaalUser } from '@/lib/portaal/queries';
 import { getMijnToegang } from '@/lib/portaal/team';
 import { getServerSupabase } from '@/lib/portaal/supabaseServer';
+import { verwerkDrukproefGoedkeuring } from '@/lib/kms/drukproeven';
 
 /**
  * Beslist een drukproef vanuit het portaal: goedkeuren of afkeuren met een opmerking.
@@ -35,6 +36,9 @@ export async function beslisDrukproefPortaalActie(formData: FormData) {
       behandeld_op: new Date().toISOString(),
     })
     .eq('id', id);
+
+  // Hangt de drukproef aan een order, dan zet een goedkeuring die order door naar productie.
+  if (besluit === 'akkoord') await verwerkDrukproefGoedkeuring(id);
 
   redirect('/portaal/drukproeven?ok=opgeslagen');
 }

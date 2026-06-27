@@ -18,6 +18,7 @@ import {
   type VerstrekkingType,
 } from '@/lib/portaal/webshop';
 import { getFavorieten } from '@/lib/portaal/favorieten';
+import { getServerSupabase } from '@/lib/portaal/supabaseServer';
 import WebshopClient from './WebshopClient';
 import { bestelPakketActie } from './actions';
 import Link from 'next/link';
@@ -38,6 +39,7 @@ export default async function Webshop({
     budget?: string;
     pakketok?: string;
     reden?: string;
+    herhaal?: string;
   }>;
 }) {
   if (!isPortalConfigured) {
@@ -121,6 +123,34 @@ export default async function Webshop({
     ([eigenMedewerker?.voornaam, eigenMedewerker?.achternaam].filter(Boolean).join(' ') || null);
 
   const favorieten = await getFavorieten(org.id);
+
+  // "Bestel opnieuw" vanaf de bestellingenpagina: de regels van die order voorvullen in de
+  // winkelwagen, zodat de gebruiker nog kan controleren of aanpassen voor hij bestelt.
+  // RLS borgt dat alleen eigen orders (of die van de eigen organisatie) zichtbaar zijn.
+  let herhaalRegels: { variant_id: string | null; item_naam: string; maat: string | null; aantal: number }[] = [];
+  const herhaalId = (sp?.herhaal ?? '').trim();
+  if (herhaalId) {
+    const sb = await getServerSupabase();
+    if (sb) {
+      const { data: regelData } = await sb
+        .from('orderregels')
+        .select('variant_id, item_naam, maat, aantal')
+        .eq('order_id', herhaalId);
+      herhaalRegels = ((regelData as {
+        variant_id: string | null;
+        item_naam: string;
+        maat: string | null;
+        aantal: number | null;
+      }[]) ?? [])
+        .map((r) => ({
+          variant_id: r.variant_id,
+          item_naam: r.item_naam,
+          maat: r.maat,
+          aantal: Math.floor(Number(r.aantal) || 0),
+        }))
+        .filter((r) => r.aantal > 0);
+    }
+  }
 
   const startpakketten = pakketten.filter((p) => p.soort === 'start');
   const regulierePakketten = pakketten.filter((p) => p.soort === 'regulier');
@@ -319,6 +349,7 @@ export default async function Webshop({
         kortingPct={org.korting_pct}
         kleurAfbeeldingen={kleurAfbeeldingen}
         favorieten={favorieten}
+        herhaalRegels={herhaalRegels}
       />
 
       <section className="mt-12">

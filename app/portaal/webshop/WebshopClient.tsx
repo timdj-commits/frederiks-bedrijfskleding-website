@@ -1,7 +1,8 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { plaatsBestelling, toggleFavorietActie } from './actions';
 import type { WebshopProduct, WebshopMedewerker } from '@/lib/portaal/webshop';
+import { useLocalStorageState } from '@/lib/portaal/useLocalStorageState';
 
 const euro = (n: number) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(n || 0);
@@ -48,6 +49,8 @@ type Props = {
   kortingPct: number | null;
   kleurAfbeeldingen: Record<string, Record<string, string>>;
   favorieten: string[];
+  /** Regels van een eerdere order die via "Bestel opnieuw" voorgevuld moeten worden. */
+  herhaalRegels?: { variant_id: string | null; item_naam: string; maat: string | null; aantal: number }[];
 };
 
 const inputClass =
@@ -94,8 +97,10 @@ export default function WebshopClient({
   kortingPct,
   kleurAfbeeldingen,
   favorieten,
+  herhaalRegels,
 }: Props) {
-  const [mand, setMand] = useState<MandItem[]>([]);
+  const [mand, setMand] = useLocalStorageState<MandItem[]>('fb-webshop-mand', []);
+  const [zoek, setZoek] = useState('');
   const favorietenSet = new Set(favorieten);
 
   // Klantkorting van de organisatie; leeg of 0 betekent gewoon de lijstprijs.
@@ -126,6 +131,69 @@ export default function WebshopClient({
     for (const p of producten) for (const v of p.varianten) map.set(v.id, { product: p, variant: v });
     return map;
   }, [producten]);
+
+  // Lookup op productnaam + maat, als terugval voor herhaalregels zonder bruikbaar variant_id.
+  const variantOpNaamMaat = useMemo(() => {
+    const map = new Map<string, string>();
+    const sleutel = (naam: string, maat: string | null) =>
+      `${(naam ?? '').trim().toLowerCase()}|${(maat ?? '').trim().toLowerCase()}`;
+    for (const p of producten) {
+      for (const v of p.varianten) {
+        const k = sleutel(p.naam, v.maat);
+        if (!map.has(k)) map.set(k, v.id);
+      }
+    }
+    return map;
+  }, [producten]);
+
+  // "Bestel opnieuw": de regels van een eerdere order eenmalig voorvullen in de winkelwagen.
+  // Matcht op variant_id als die nog bestaat/actief is, anders op productnaam + maat.
+  // Eenmalig per herhaal-set zodat het de mand niet bij elke render overschrijft.
+  const herhaalGedaan = useRef(false);
+  useEffect(() => {
+    if (herhaalGedaan.current) return;
+    if (!herhaalRegels || herhaalRegels.length === 0) return;
+    herhaalGedaan.current = true;
+    const sleutel = (naam: string, maat: string | null) =>
+      `${(naam ?? '').trim().toLowerCase()}|${(maat ?? '').trim().toLowerCase()}`;
+    const nieuw: MandItem[] = [];
+    for (const r of herhaalRegels) {
+      let variantId: string | null = null;
+      if (r.variant_id && variantIndex.has(r.variant_id)) {
+        variantId = r.variant_id;
+      } else {
+        variantId = variantOpNaamMaat.get(sleutel(r.item_naam, r.maat)) ?? null;
+      }
+      if (!variantId) continue;
+      const bestaat = nieuw.find((x) => x.variantId === variantId);
+      if (bestaat) bestaat.aantal += r.aantal;
+      else nieuw.push({ variantId, aantal: r.aantal });
+    }
+    if (nieuw.length > 0) {
+      setMand((m) => {
+        const samen = [...m];
+        for (const item of nieuw) {
+          const bestaat = samen.find((x) => x.variantId === item.variantId);
+          if (bestaat) bestaat.aantal += item.aantal;
+          else samen.push({ ...item });
+        }
+        return samen;
+      });
+    }
+    // Bewust eenmalig: alleen bij de eerste render met deze herhaalregels.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [herhaalRegels, variantIndex, variantOpNaamMaat]);
+
+  // Client-side zoeken op naam, merk en categorie. Leeg veld toont alles.
+  const zoekterm = zoek.trim().toLowerCase();
+  const zichtbareProducten = useMemo(() => {
+    if (!zoekterm) return producten;
+    return producten.filter((p) =>
+      [p.naam, p.merk, p.categorie]
+        .filter(Boolean)
+        .some((veld) => String(veld).toLowerCase().includes(zoekterm)),
+    );
+  }, [producten, zoekterm]);
 
   const voegToe = (variantId: string) => {
     if (!variantId) return;
@@ -187,12 +255,36 @@ export default function WebshopClient({
   return (
     <div className="mt-8 grid gap-8 pb-24 lg:grid-cols-3 lg:pb-0">
       <div className="lg:col-span-2">
+        {herhaalRegels && herhaalRegels.length > 0 && (
+          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-ink-800">
+            We hebben de regels van je eerdere bestelling in de winkelwagen gezet. Controleer ze en pas zo nodig aan voor je bestelt.
+          </div>
+        )}
         <h2 className="font-display text-xl font-extrabold text-ink-900">Producten</h2>
         {producten.length === 0 ? (
           <p className="mt-3 text-sm text-warm">Er staan nog geen producten in jullie assortiment.</p>
         ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {producten.map((p) => {
+          <>
+            <div className="mt-4">
+              <label htmlFor="webshop-zoek" className="sr-only">
+                Zoek in producten
+              </label>
+              <input
+                id="webshop-zoek"
+                type="search"
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+                placeholder="Zoek op naam, merk of categorie"
+                className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
+              />
+            </div>
+            {zichtbareProducten.length === 0 ? (
+              <p className="mt-4 text-sm text-warm">
+                Geen producten gevonden voor &ldquo;{zoek.trim()}&rdquo;.
+              </p>
+            ) : (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {zichtbareProducten.map((p) => {
               const voorkeur = voorkeursmaten[p.id];
               const opties = toegestaneVarianten(p, voorkeur);
               const gekozenVariant = keuze[p.id] ?? opties[0]?.id ?? '';
@@ -422,8 +514,10 @@ export default function WebshopClient({
                   )}
                 </div>
               );
-            })}
-          </div>
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
 

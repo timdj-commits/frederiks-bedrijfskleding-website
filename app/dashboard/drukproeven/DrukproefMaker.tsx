@@ -13,7 +13,7 @@ const inputCls =
  * voorbeeld mee met de keuzes (kledingstuk, kleur, positie, techniek, logo). Optioneel
  * upload je een eigen afbeelding; die wordt dan de definitieve proef in plaats van de render.
  */
-export default function DrukproefMaker({ orgId, klantLogoUrl }: { orgId: string; klantLogoUrl?: string | null }) {
+export default function DrukproefMaker({ orgId, klantLogoUrl, orderId }: { orgId: string; klantLogoUrl?: string | null; orderId?: string | null }) {
   const [type, setType] = useState<string>(kledingtypes[0].id);
   const [kleur, setKleur] = useState<number>(0);
   const [positie, setPositie] = useState<string>(logoposities[0].id);
@@ -34,6 +34,7 @@ export default function DrukproefMaker({ orgId, klantLogoUrl }: { orgId: string;
 
       <form action={maakDrukproefActie} className="mt-5 flex flex-col gap-3">
         <input type="hidden" name="org_id" value={orgId} />
+        {orderId && <input type="hidden" name="order_id" value={orderId} />}
         <input type="hidden" name="type" value={type} />
         <input type="hidden" name="kleur" value={kleur} />
         <input type="hidden" name="positie" value={positie} />

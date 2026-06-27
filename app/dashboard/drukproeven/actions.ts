@@ -16,6 +16,7 @@ export async function maakDrukproefActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
 
   const orgId = String(formData.get('org_id') ?? '').trim();
+  const orderId = String(formData.get('order_id') ?? '').trim() || null;
   const naam = String(formData.get('naam') ?? '').trim();
   const type = String(formData.get('type') ?? '').trim() || 'tshirt';
   const kleur = Number(formData.get('kleur') ?? 0) || 0;
@@ -37,6 +38,7 @@ export async function maakDrukproefActie(formData: FormData) {
     logo_url: logoUrl,
     afbeelding_url: afbeeldingUrl,
     omschrijving,
+    order_id: orderId,
   });
 
   redirect(`/dashboard/drukproeven?org=${orgId}&ok=aangemaakt`);

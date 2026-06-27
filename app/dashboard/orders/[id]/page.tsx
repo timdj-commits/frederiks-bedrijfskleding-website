@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { getOrder, ORDER_STATUSSEN, GOEDKEURING_STATUSSEN } from '@/lib/kms/orders';
 import { listInkoopregelsVoorOrder } from '@/lib/kms/inkoop';
+import { facturenVoorOrder } from '@/lib/kms/facturen';
+import { listDrukproevenVoorOrder } from '@/lib/kms/drukproeven';
 import { voegRegelToe, verwijderRegel, wijzigStatus, beslisGoedkeuring, maakInkoopregels, zetTrackTrace } from './actions';
 import ConfirmSubmit from '@/components/ConfirmSubmit';
 
@@ -21,6 +23,12 @@ const inkoopBadge: Record<string, string> = {
   besteld: 'bg-ink-100 text-ink-700',
   deels: 'bg-ink-100 text-ink-700',
   geleverd: 'bg-green-100 text-green-800',
+};
+const drukproefBadge: Record<string, string> = {
+  concept: 'bg-ink-100 text-ink-700',
+  verstuurd: 'bg-amber-100 text-amber-800',
+  goedgekeurd: 'bg-green-100 text-green-800',
+  afgekeurd: 'bg-red-100 text-red-700',
 };
 
 type VariantRij = { id: string; product_id: string; maat: string | null; kleur: string | null; verkoopprijs: number | null; meerprijs: number | null; voorraad: number };
@@ -55,10 +63,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     );
   }
 
-  const [{ data: prodData }, { data: varData }, inkoopregels] = await Promise.all([
+  const [{ data: prodData }, { data: varData }, inkoopregels, facturen, drukproeven] = await Promise.all([
     sb.from('producten').select('id, naam').eq('actief', true).order('naam'),
     sb.from('product_varianten').select('id, product_id, maat, kleur, verkoopprijs, meerprijs, voorraad').eq('actief', true),
     listInkoopregelsVoorOrder(id),
+    facturenVoorOrder(id),
+    listDrukproevenVoorOrder(id),
   ]);
   const producten = (prodData as { id: string; naam: string }[]) ?? [];
   const varianten = (varData as VariantRij[]) ?? [];
@@ -74,7 +84,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p className="mt-1 text-sm text-warm">{order.organisatie_naam || 'Onbekende klant'}{order.medewerker_naam ? ` · ${order.medewerker_naam}` : ''} · {fmt(order.besteldatum)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <Link href={`/dashboard/facturen?order=${order.id}`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">Maak factuur</Link>
+          {facturen.length > 0 ? (
+            facturen.map((f) => (
+              <Link key={f.id} href={`/dashboard/facturen/${f.id}`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">
+                Factuur {f.factuurnummer || 'concept'}
+              </Link>
+            ))
+          ) : (
+            <Link href={`/dashboard/facturen?order=${order.id}`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">Maak factuur</Link>
+          )}
           <Link href={`/dashboard/orders/${order.id}/werkbon`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">Werkbon</Link>
           <Link href={`/dashboard/orders/${order.id}/pakbon`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">Pakbon</Link>
           <Link href={`/dashboard/orders/${order.id}/picklijst`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">Picklijst</Link>
@@ -301,6 +319,32 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               </tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      <section className="mt-12">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-bold text-ink-900">Drukproeven</h2>
+          <Link href={`/dashboard/drukproeven?org=${order.organisatie_id}&order=${order.id}`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">Drukproef maken</Link>
+        </div>
+        <p className="mt-1 text-sm text-warm">Een goedgekeurde drukproef zet deze order automatisch door naar borduren of bedrukken.</p>
+        {drukproeven.length === 0 ? (
+          <p className="mt-4 rounded-xl border border-line bg-mist px-5 py-4 text-sm text-warm">Nog geen drukproeven aan deze order gekoppeld.</p>
+        ) : (
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {drukproeven.map((d) => (
+              <li key={d.id} className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-white p-4 shadow-soft">
+                <div>
+                  <p className="font-semibold text-ink-900">{d.naam}</p>
+                  <p className="text-xs text-warm">{[d.techniek, d.positie].filter(Boolean).join(' · ')}</p>
+                  {d.opmerking && (d.status === 'goedgekeurd' || d.status === 'afgekeurd') && (
+                    <p className="mt-1 text-xs text-warm">Reactie klant: {d.opmerking}</p>
+                  )}
+                </div>
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${drukproefBadge[d.status] ?? 'bg-ink-100 text-ink-600'}`}>{d.status}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </main>

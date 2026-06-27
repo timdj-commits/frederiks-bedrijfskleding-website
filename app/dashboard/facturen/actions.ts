@@ -1,7 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { dashAuthed } from '@/lib/kms/adminClient';
-import { maakFactuurVanOrder, maakLegeFactuur, zetBoekhouderEmail, mailFacturenNaarBoekhouder, listFactureerbareOrders } from '@/lib/kms/facturen';
+import { maakFactuurVanOrder, maakLegeFactuur, zetBoekhouderEmail, mailFacturenNaarBoekhouder, listFactureerbareOrders, zetFactuurStatus } from '@/lib/kms/facturen';
 import { logAudit } from '@/lib/kms/audit';
 
 export async function factuurVanOrder(formData: FormData) {
@@ -40,6 +40,18 @@ export async function zetBoekhouderEmailActie(formData: FormData) {
   await zetBoekhouderEmail(email);
   await logAudit('boekhouder_email_gewijzigd', { entiteit: 'instellingen' });
   redirect('/dashboard/facturen?ok=boekhouder');
+}
+
+export async function markeerBetaaldActie(formData: FormData) {
+  if (!(await dashAuthed())) redirect('/dashboard');
+  const ids = formData.getAll('factuur_ids').map(String).filter(Boolean);
+  let aantal = 0;
+  for (const id of ids) {
+    const ok = await zetFactuurStatus(id, 'betaald');
+    if (ok) aantal++;
+  }
+  if (aantal > 0) await logAudit('facturen_betaald_gemarkeerd', { entiteit: 'facturen', details: { aantal } });
+  redirect(`/dashboard/facturen?ok=betaald&aantal=${aantal}`);
 }
 
 export async function mailFacturenActie(formData: FormData) {

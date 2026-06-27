@@ -46,7 +46,12 @@ export async function beslisGoedkeuring(formData: FormData) {
   const orderId = String(formData.get('orderId') ?? '').trim();
   const status = String(formData.get('goedkeuring') ?? '').trim();
   const doorWie = String(formData.get('door_wie') ?? '').trim() || null;
-  if (orderId && status) await zetGoedkeuring(orderId, status, doorWie);
+  if (orderId && status) {
+    await zetGoedkeuring(orderId, status, doorWie);
+    // Bij goedkeuring meteen inkoopregels aanmaken voor wat niet op voorraad is,
+    // zodat ze klaarstaan in het inkoop-bulkscherm. genereerInkoopregels voorkomt dubbels.
+    if (status === 'goedgekeurd') await genereerInkoopregels(orderId);
+  }
   redirect('/dashboard/orders/' + orderId);
 }
 

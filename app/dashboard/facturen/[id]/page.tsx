@@ -79,6 +79,9 @@ export default async function FactuurDetailPage({ params }: { params: Promise<{ 
           <p className="mt-1 text-sm text-warm">{org?.naam || 'Onbekende klant'} · {fmt(factuur.factuurdatum)}</p>
         </div>
         <div className="flex items-center gap-4">
+          {factuur.order_id && (
+            <Link href={`/dashboard/orders/${factuur.order_id}`} className="text-sm font-semibold text-amber-700 hover:text-amber-800">Bekijk order</Link>
+          )}
           <PrintKnop />
           <Link href="/dashboard/facturen" className="text-sm font-semibold text-warm hover:text-ink-800">Terug naar facturen</Link>
         </div>
