@@ -146,10 +146,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                     <p className="font-semibold text-ink-900">{l.name}{l.company ? ` · ${l.company}` : ''}</p>
                     <p className="text-warm">{l.email}{l.phone ? ` · ${l.phone}` : ''}</p>
                     {l.bericht && (
-                      <details className="mt-1">
-                        <summary className="cursor-pointer text-xs text-amber-700">Bericht</summary>
-                        <p className="mt-1 whitespace-pre-wrap text-xs text-warm">{l.bericht}</p>
-                      </details>
+                      <p className="mt-1 whitespace-pre-wrap text-xs text-warm">{l.bericht}</p>
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-warm">

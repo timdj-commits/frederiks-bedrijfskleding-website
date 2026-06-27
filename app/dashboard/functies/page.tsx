@@ -4,6 +4,7 @@ import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
 import { listOrganisaties, listFuncties } from '@/lib/kms/functies';
 import { nieuweFunctie, verwijderFunctieActie } from './actions';
 import ConfirmSubmit from '@/components/ConfirmSubmit';
+import NavigateSelect from '@/components/dashboard/NavigateSelect';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Functies', robots: { index: false, follow: false } };
@@ -41,16 +42,19 @@ export default async function FunctiesPage({ searchParams }: { searchParams: Pro
       <p className="mt-2 text-sm text-warm">Per klant leg je functiegroepen vast met een vast kledingpakket. Kies een functie om de gekoppelde producten te beheren.</p>
 
       <section className="mt-8">
-        <form method="get" className="flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-white p-6 shadow-soft">
-          <div className="min-w-[16rem]">
+        <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-white p-6 shadow-soft">
+          <div className="min-w-[20rem] flex-1 sm:max-w-md">
             <label className="block text-xs font-semibold text-warm">Klant</label>
-            <select name="org" defaultValue={gekozen} className={inputCls}>
-              <option value="">Kies een klant</option>
-              {orgs.map((o) => <option key={o.id} value={o.id}>{o.naam}</option>)}
-            </select>
+            <NavigateSelect
+              basePath="/dashboard/functies"
+              param="org"
+              value={gekozen}
+              placeholder="Kies een klant"
+              className={`${inputCls} w-full`}
+              options={orgs.map((o) => ({ value: o.id, label: o.naam }))}
+            />
           </div>
-          <button type="submit" className="rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Tonen</button>
-        </form>
+        </div>
       </section>
 
       {!gekozen ? (

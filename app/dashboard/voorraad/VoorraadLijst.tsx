@@ -65,9 +65,9 @@ export default function VoorraadLijst({ producten }: { producten: VoorraadProduc
   // Een merk is open als de gebruiker het expliciet opende, of -- bij geen expliciete
   // keuze -- automatisch wanneer er producten onder minimum in zitten of er gezocht wordt.
   const isOpen = (g: MerkGroep) => {
+    if (zoek.trim()) return true; // bij actief zoeken altijd alles open, zodat de resultaten zichtbaar zijn
     const expliciet = openMerken[g.merk];
     if (expliciet !== undefined) return expliciet;
-    if (zoek.trim()) return true;
     return g.onderMinimum > 0;
   };
 
@@ -179,7 +179,7 @@ export default function VoorraadLijst({ producten }: { producten: VoorraadProduc
                 {open && (
                   <div className="border-t border-line">
                     {g.producten.map((p) => (
-                      <ProductRij key={p.id} product={p} />
+                      <ProductRij key={p.id} product={p} forceOpen={!!zoek.trim()} />
                     ))}
                   </div>
                 )}
@@ -192,13 +192,14 @@ export default function VoorraadLijst({ producten }: { producten: VoorraadProduc
   );
 }
 
-function ProductRij({ product: p }: { product: VoorraadProduct }) {
-  const [open, setOpen] = useState(false);
+function ProductRij({ product: p, forceOpen = false }: { product: VoorraadProduct; forceOpen?: boolean }) {
+  const [lokaalOpen, setLokaalOpen] = useState(false);
+  const open = forceOpen || lokaalOpen;
   return (
     <div className={`border-b border-line last:border-b-0 ${p.onderMinimum ? 'bg-amber-50' : ''}`}>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setLokaalOpen((v) => !v)}
         aria-expanded={open}
         className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-3 text-left hover:bg-mist"
       >

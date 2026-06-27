@@ -92,9 +92,9 @@ export default async function KlantenPage({ searchParams }: { searchParams: Prom
       <p className="mt-2 text-sm text-warm">Per klant zet je hier de kledinglijn op en handel je herbestellingen af.</p>
 
       <form method="get" className="mt-6 flex flex-wrap items-end gap-3">
-        <div>
+        <div className="min-w-[20rem] flex-1 sm:max-w-lg">
           <label className="block text-xs font-semibold text-warm">Zoeken</label>
-          <input name="zoek" defaultValue={zoek ?? ''} placeholder="Naam, plaats of contactpersoon" className={inputCls} />
+          <input name="zoek" defaultValue={zoek ?? ''} placeholder="Naam, plaats of contactpersoon" className={`${inputCls} w-full`} />
         </div>
         <button type="submit" className="rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">Zoeken</button>
         {zoek && zoek.trim() && <Link href="/dashboard/klanten" className="text-sm font-semibold text-warm hover:text-ink-800">Wissen</Link>}
