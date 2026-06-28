@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
+import { kmsAdmin, dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { listOrganisaties } from '@/lib/kms/functies';
 import { medewerkersImport, productenImport, productenLijstImport } from './actions';
 
@@ -21,6 +21,7 @@ type Zoek = {
 
 export default async function ImportPage({ searchParams }: { searchParams: Promise<Zoek> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const sb = kmsAdmin();
 
   if (!sb) {

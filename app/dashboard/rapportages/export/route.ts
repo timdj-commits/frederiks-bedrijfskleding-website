@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { env, isLeadsDbConfigured } from '@/lib/env';
-import { DASH_COOKIE } from '@/lib/kms/adminClient';
+import { DASH_COOKIE, eisEigenaar } from '@/lib/kms/adminClient';
 import {
   omzetPerKlant,
   omzetPerMerk,
@@ -90,6 +90,7 @@ export async function GET(request: Request) {
   if (!env.dashboardPassword || auth !== env.dashboardPassword.trim()) {
     return new Response('Niet toegestaan', { status: 401 });
   }
+  await eisEigenaar();
   if (!isLeadsDbConfigured) return new Response('Niet geconfigureerd', { status: 400 });
 
   const gevraagd = new URL(request.url).searchParams.get('rapport');

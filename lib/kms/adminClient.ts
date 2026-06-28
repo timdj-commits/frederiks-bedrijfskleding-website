@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { env, isLeadsDbConfigured } from '@/lib/env';
 import { getServerSupabase } from '@/lib/portaal/supabaseServer';
@@ -74,4 +75,20 @@ export async function getHuidigeAdmin(): Promise<{ email: string; naam: string |
   } catch {
     return null;
   }
+}
+
+/**
+ * Mag de huidige gebruiker de eigenaar-only delen (instellingen, beheerders,
+ * facturatie, rapportage, groei, systeem)? Een wachtwoord-login zonder admin-account
+ * houdt volledige toegang (eigenaar); een ingelogde admin moet rol 'eigenaar' hebben.
+ * Medewerker en lezer worden geweerd.
+ */
+export async function magEigenaar(): Promise<boolean> {
+  const admin = await getHuidigeAdmin();
+  return admin === null || admin.rol === 'eigenaar';
+}
+
+/** Guard voor eigenaar-only pagina's en acties: stuurt niet-eigenaren terug. */
+export async function eisEigenaar(): Promise<void> {
+  if (!(await magEigenaar())) redirect('/dashboard?fout=geen-toegang');
 }

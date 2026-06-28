@@ -1,6 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { importeerMedewerkers, importeerProducten, importeerProductenLijst, type ImportResultaat } from '@/lib/kms/import';
 
 function terug(prefix: string, res: ImportResultaat): never {
@@ -17,6 +17,7 @@ function terug(prefix: string, res: ImportResultaat): never {
 
 export async function medewerkersImport(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const orgId = String(formData.get('organisatie_id') ?? '').trim();
   const csv = String(formData.get('csv') ?? '');
   const res = await importeerMedewerkers(orgId, csv);
@@ -25,6 +26,7 @@ export async function medewerkersImport(formData: FormData) {
 
 export async function productenImport(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const csv = String(formData.get('csv') ?? '');
   const res = await importeerProducten(csv);
   terug('producten', res);
@@ -32,6 +34,7 @@ export async function productenImport(formData: FormData) {
 
 export async function productenLijstImport(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   // CSV kan uit het tekstveld komen of uit een geupload bestand.
   const geplakt = String(formData.get('csv') ?? '');
   let csv = geplakt;

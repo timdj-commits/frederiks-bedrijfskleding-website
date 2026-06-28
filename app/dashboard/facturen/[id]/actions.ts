@@ -1,6 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { voegFactuurregelToe, werkFactuurregel, verwijderFactuurregel, zetFactuurStatus } from '@/lib/kms/facturen';
 
 function getalOfNul(raw: string): number {
@@ -10,6 +10,7 @@ function getalOfNul(raw: string): number {
 
 export async function voegRegel(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const factuurId = String(formData.get('factuurId') ?? '').trim();
   const omschrijving = String(formData.get('omschrijving') ?? '').trim();
   const aantal = getalOfNul(String(formData.get('aantal') ?? '1'));
@@ -24,6 +25,7 @@ export async function voegRegel(formData: FormData) {
 
 export async function werkRegel(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const factuurId = String(formData.get('factuurId') ?? '').trim();
   const regelId = String(formData.get('regelId') ?? '').trim();
   const omschrijving = String(formData.get('omschrijving') ?? '').trim();
@@ -39,6 +41,7 @@ export async function werkRegel(formData: FormData) {
 
 export async function verwijderRegel(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const factuurId = String(formData.get('factuurId') ?? '').trim();
   const regelId = String(formData.get('regelId') ?? '').trim();
   if (regelId) await verwijderFactuurregel(regelId);
@@ -47,6 +50,7 @@ export async function verwijderRegel(formData: FormData) {
 
 export async function wijzigStatus(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const factuurId = String(formData.get('factuurId') ?? '').trim();
   const status = String(formData.get('status') ?? '').trim();
   if (factuurId && status) await zetFactuurStatus(factuurId, status);

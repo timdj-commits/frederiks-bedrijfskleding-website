@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
+import { kmsAdmin, dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import {
   kerncijfers,
   omzetPerKlant,
@@ -23,6 +23,7 @@ const datumKort = (d: string | null) =>
 
 export default async function RapportagesPage() {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const sb = kmsAdmin();
 
   if (!sb) {

@@ -1,5 +1,5 @@
 'use server';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { aiTekst } from '@/lib/ai';
 
 export type AiSamenvattingResultaat = { tekst?: string; error?: string };
@@ -16,6 +16,7 @@ export async function aiSamenvattingActie(
   if (!(await dashAuthed())) {
     return { error: 'Geen toegang.' };
   }
+  await eisEigenaar();
 
   const ruw = String(formData.get('cijfers') ?? '');
   let cijfers: unknown = null;

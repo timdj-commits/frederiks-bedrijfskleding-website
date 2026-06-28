@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
+import { kmsAdmin, dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { listFacturenPaged, listOrganisaties, listFactureerbareOrders, getBoekhouderEmail, FACTUUR_STATUSSEN } from '@/lib/kms/facturen';
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
 import SortableTh from '@/components/dashboard/SortableTh';
@@ -27,6 +27,7 @@ const statusBadge: Record<string, string> = {
 
 export default async function FacturenPage({ searchParams }: { searchParams: Promise<{ status?: string; order?: string; ok?: string; gemaild?: string; mailfout?: string; pagina?: string; sort?: string; dir?: string; aantal?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const sb = kmsAdmin();
 
   if (!sb) {

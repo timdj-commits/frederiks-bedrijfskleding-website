@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { dashAuthed, getHuidigeAdmin } from '@/lib/kms/adminClient';
+import { dashAuthed, getHuidigeAdmin, eisEigenaar } from '@/lib/kms/adminClient';
 import { listAdmins } from '@/lib/kms/adminGebruikers';
 import { adminToevoegen, adminActiefZetten, adminRolWijzigen } from './actions';
 import AutoSubmitSelect from '@/components/dashboard/AutoSubmitSelect';
@@ -25,6 +25,7 @@ export default async function AdminsPage({ searchParams }: { searchParams: Promi
       </main>
     );
   }
+  await eisEigenaar();
 
   const huidige = await getHuidigeAdmin();
   // Wachtwoord-login zonder admin-account telt als eigenaar.
@@ -72,7 +73,7 @@ export default async function AdminsPage({ searchParams }: { searchParams: Promi
                   {admins.map((a) => (
                     <tr key={a.id} className="align-middle">
                       <td className="py-2 pr-3 font-medium text-ink-900">{a.email}</td>
-                      <td className="py-2 pr-3 text-ink-700">{a.naam ?? '—'}</td>
+                      <td className="py-2 pr-3 text-ink-700">{a.naam ?? '-'}</td>
                       <td className="py-2 pr-3">
                         <form action={adminRolWijzigen} className="flex items-center gap-2">
                           <input type="hidden" name="id" value={a.id} />

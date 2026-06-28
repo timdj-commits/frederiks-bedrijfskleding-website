@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { getBoekhouderEmail } from '@/lib/kms/facturen';
 import { getRetourtermijn } from '@/lib/portaal/service';
 import { zetBoekhouderActie, zetRetourActie } from './actions';
@@ -16,6 +16,7 @@ export default async function InstellingenPage({
   searchParams: Promise<{ ok?: string }>;
 }) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
 
   const { ok } = await searchParams;
   const [boekhouderEmail, termijn] = await Promise.all([

@@ -58,6 +58,21 @@ const groepen: Groep[] = [
   ] },
 ];
 
+// Onderdelen die alleen de eigenaar ziet (instellingen, beheer, financien, groei, systeem).
+// Medewerkers en lezers krijgen deze niet in de nav en worden server-side geweerd.
+const EIGENAAR_ONLY = new Set<string>([
+  '/dashboard/prospects',
+  '/dashboard/campagnes',
+  '/dashboard/facturen',
+  '/dashboard/sparen',
+  '/dashboard/analyse',
+  '/dashboard/rapportages',
+  '/dashboard/import',
+  '/dashboard/export',
+  '/dashboard/audit',
+  '/dashboard/instellingen',
+]);
+
 function isActief(pathname: string, href: string) {
   if (href === '/dashboard') return pathname === '/dashboard';
   return pathname === href || pathname.startsWith(href + '/');
@@ -79,6 +94,14 @@ export function DashboardShell({
   // Beheerders-link tonen voor een eigenaar, of bij wachtwoord-login (geen admin-account => adminRol null).
   const toonBeheerders = adminRol === 'eigenaar' || adminRol === null;
   const beheerItem: Item | null = toonBeheerders ? { href: '/dashboard/admins', label: 'Beheerders' } : null;
+
+  // Medewerker/lezer: verberg de eigenaar-only onderdelen en lege groepen.
+  const beperkt = adminRol === 'medewerker' || adminRol === 'lezer';
+  const zichtbareGroepen = beperkt
+    ? groepen
+        .map((g) => ({ ...g, items: g.items.filter((it) => !EIGENAAR_ONLY.has(it.href)) }))
+        .filter((g) => g.items.length > 0)
+    : groepen;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -106,7 +129,7 @@ export function DashboardShell({
         <kbd className="rounded bg-ink-800 px-1.5 py-0.5 text-[10px] font-semibold text-ink-200">⌘K</kbd>
       </button>
       <div className="flex flex-col gap-5">
-        {groepen.map((g) => (
+        {zichtbareGroepen.map((g) => (
           <div key={g.titel}>
             <p className="mb-1 px-2 text-[11px] font-bold uppercase tracking-wide text-ink-400">{g.titel}</p>
             <div className="flex flex-col">

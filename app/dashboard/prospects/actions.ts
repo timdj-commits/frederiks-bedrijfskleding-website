@@ -1,6 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { importeerProspecten, maakProspect, zetProspectStatus, werkProspectNotitie } from '@/lib/kms/prospecten';
 
 /**
@@ -10,6 +10,7 @@ import { importeerProspecten, maakProspect, zetProspectStatus, werkProspectNotit
  */
 export async function importeerCsvActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const csv = String(formData.get('csv') ?? '');
   const regels = csv
     .split(/\r?\n/)
@@ -36,6 +37,7 @@ export async function importeerCsvActie(formData: FormData) {
 /** Maakt één prospect aan op basis van losse velden. */
 export async function nieuweProspectActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const bedrijfsnaam = String(formData.get('bedrijfsnaam') ?? '').trim();
   if (!bedrijfsnaam) redirect('/dashboard/prospects');
   await maakProspect({
@@ -57,6 +59,7 @@ export async function nieuweProspectActie(formData: FormData) {
  */
 export async function zetProspectStatusActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const id = String(formData.get('id') ?? '').trim();
   const status = String(formData.get('status') ?? '').trim();
   const terug = String(formData.get('terug') ?? '').trim() || '/dashboard/prospects';
@@ -67,6 +70,7 @@ export async function zetProspectStatusActie(formData: FormData) {
 /** Werkt de notitie van een prospect bij. */
 export async function werkNotitieActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const id = String(formData.get('id') ?? '').trim();
   const notitie = String(formData.get('notitie') ?? '').trim();
   if (id) await werkProspectNotitie(id, notitie);

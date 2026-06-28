@@ -1,11 +1,12 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { maakCampagne } from '@/lib/kms/campagnes';
 import { logAudit } from '@/lib/kms/audit';
 
 export async function nieuweCampagneActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const naam = String(formData.get('naam') ?? '').trim();
   const type = String(formData.get('type') ?? '').trim();
   const van_naam = String(formData.get('van_naam') ?? '').trim();

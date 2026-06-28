@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
+import { kmsAdmin, dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { getFactuur, getFactuurMailLog } from '@/lib/kms/facturen';
 import { voegRegel, werkRegel, verwijderRegel, wijzigStatus } from './actions';
 import PrintKnop from './PrintKnop';
@@ -36,6 +36,7 @@ const BEDRIJF = {
 
 export default async function FactuurDetailPage({ params }: { params: Promise<{ id: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const { id } = await params;
   const sb = kmsAdmin();
 

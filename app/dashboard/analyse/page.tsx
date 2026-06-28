@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
+import { kmsAdmin, dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { formatEuro, formatGetal } from '@/lib/format';
 import {
   medewerkersPerBedrijf,
@@ -38,6 +38,7 @@ function GroeiPijl({ groei, soort }: { groei: GroeiCijfers; soort: 'stuks' | 'om
 
 export default async function AnalysePage() {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const sb = kmsAdmin();
 
   if (!sb) {
@@ -297,7 +298,7 @@ export default async function AnalysePage() {
             <p className="text-xs uppercase tracking-wide text-warm">Conversie</p>
             <p className="mt-1 font-display text-2xl font-extrabold text-ink-900">
               {conversie.conversiePct === null
-                ? '—'
+                ? '-'
                 : `${conversie.conversiePct.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}%`}
             </p>
             <p className="mt-1 text-xs text-warm">{formatGetal(conversie.verloren)} verloren</p>

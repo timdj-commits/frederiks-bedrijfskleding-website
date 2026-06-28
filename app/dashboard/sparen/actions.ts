@@ -1,11 +1,12 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { zetSpaarInstellingen, wisselPuntenIn } from '@/lib/kms/sparen';
 import { logAudit } from '@/lib/kms/audit';
 
 export async function zetSpaarInstellingenActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const actief = String(formData.get('actief') ?? '') === 'aan';
   const puntenPerEuro = Number(String(formData.get('punten_per_euro') ?? '').replace(',', '.')) || 1;
   const euroPerPunt = Number(String(formData.get('euro_per_punt') ?? '').replace(',', '.')) || 0.01;
@@ -16,6 +17,7 @@ export async function zetSpaarInstellingenActie(formData: FormData) {
 
 export async function wisselPuntenInActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const organisatieId = String(formData.get('organisatie_id') ?? '').trim();
   const punten = Math.floor(Number(String(formData.get('punten') ?? '').replace(',', '.')));
   const r = await wisselPuntenIn(organisatieId, punten);

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
+import { kmsAdmin, dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { listCampagnes, CAMPAGNE_TYPES } from '@/lib/kms/campagnes';
 import EmptyState from '@/components/dashboard/EmptyState';
 import { nieuweCampagneActie } from './actions';
@@ -25,6 +25,7 @@ const typeLabel: Record<string, string> = {
 
 export default async function CampagnesPage() {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const sb = kmsAdmin();
 
   if (!sb) {

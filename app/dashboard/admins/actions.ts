@@ -1,7 +1,7 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { dashAuthed, getHuidigeAdmin } from '@/lib/kms/adminClient';
+import { dashAuthed, getHuidigeAdmin, eisEigenaar } from '@/lib/kms/adminClient';
 import { maakAdmin, zetAdminActief, wijzigAdminRol } from '@/lib/kms/adminGebruikers';
 
 /**
@@ -19,6 +19,7 @@ async function eigenaarGuard(): Promise<boolean> {
 
 export async function adminToevoegen(formData: FormData) {
   if (!(await eigenaarGuard())) redirect('/dashboard/admins?fout=toegang');
+  await eisEigenaar();
   const email = String(formData.get('email') ?? '');
   const naam = String(formData.get('naam') ?? '');
   const rol = String(formData.get('rol') ?? 'medewerker');
@@ -30,6 +31,7 @@ export async function adminToevoegen(formData: FormData) {
 
 export async function adminActiefZetten(formData: FormData) {
   if (!(await eigenaarGuard())) redirect('/dashboard/admins?fout=toegang');
+  await eisEigenaar();
   const id = String(formData.get('id') ?? '');
   const actief = String(formData.get('actief') ?? '') === 'true';
   await zetAdminActief(id, actief);
@@ -39,6 +41,7 @@ export async function adminActiefZetten(formData: FormData) {
 
 export async function adminRolWijzigen(formData: FormData) {
   if (!(await eigenaarGuard())) redirect('/dashboard/admins?fout=toegang');
+  await eisEigenaar();
   const id = String(formData.get('id') ?? '');
   const rol = String(formData.get('rol') ?? '');
   await wijzigAdminRol(id, rol);

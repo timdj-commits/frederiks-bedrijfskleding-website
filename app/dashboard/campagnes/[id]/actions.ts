@@ -1,6 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import {
   zetCampagneStatus,
   voegStapToe,
@@ -17,6 +17,7 @@ function getalOfNul(raw: string): number {
 
 export async function wijzigCampagneStatusActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const id = String(formData.get('campagneId') ?? '').trim();
   const status = String(formData.get('status') ?? '').trim();
   if (id && status) {
@@ -28,6 +29,7 @@ export async function wijzigCampagneStatusActie(formData: FormData) {
 
 export async function voegStapActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const campagneId = String(formData.get('campagneId') ?? '').trim();
   const onderwerp = String(formData.get('onderwerp') ?? '').trim();
   const body = String(formData.get('body') ?? '');
@@ -43,6 +45,7 @@ export async function voegStapActie(formData: FormData) {
 
 export async function werkStapActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const campagneId = String(formData.get('campagneId') ?? '').trim();
   const stapId = String(formData.get('stapId') ?? '').trim();
   const onderwerp = String(formData.get('onderwerp') ?? '').trim();
@@ -59,6 +62,7 @@ export async function werkStapActie(formData: FormData) {
 
 export async function verwijderStapActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const campagneId = String(formData.get('campagneId') ?? '').trim();
   const stapId = String(formData.get('stapId') ?? '').trim();
   if (stapId) {
@@ -70,6 +74,7 @@ export async function verwijderStapActie(formData: FormData) {
 
 export async function schrijfInActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const campagneId = String(formData.get('campagneId') ?? '').trim();
   const prospectStatus = String(formData.get('prospectStatus') ?? '').trim();
   if (!campagneId) redirect('/dashboard/campagnes');

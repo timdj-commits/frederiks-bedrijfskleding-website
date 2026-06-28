@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { formatEuro, formatGetal } from '@/lib/format';
 import { getSpaarInstellingen, getSpaarsaldoAlle } from '@/lib/kms/sparen';
 import { zetSpaarInstellingenActie, wisselPuntenInActie } from './actions';
@@ -12,6 +12,7 @@ const inputCls = 'mt-1 w-full rounded-md border border-line px-3 py-2 text-sm fo
 
 export default async function SparenPage({ searchParams }: { searchParams: Promise<{ ok?: string; fout?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
 
   const { ok, fout } = await searchParams;
   const [instellingen, saldi] = await Promise.all([getSpaarInstellingen(), getSpaarsaldoAlle()]);

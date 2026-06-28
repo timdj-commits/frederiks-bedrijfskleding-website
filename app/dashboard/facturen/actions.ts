@@ -1,11 +1,12 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { maakFactuurVanOrder, maakLegeFactuur, zetBoekhouderEmail, mailFacturenNaarBoekhouder, listFactureerbareOrders, zetFactuurStatus } from '@/lib/kms/facturen';
 import { logAudit } from '@/lib/kms/audit';
 
 export async function factuurVanOrder(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const orderId = String(formData.get('order_id') ?? '').trim();
   if (!orderId) redirect('/dashboard/facturen');
   const id = await maakFactuurVanOrder(orderId);
@@ -15,6 +16,7 @@ export async function factuurVanOrder(formData: FormData) {
 
 export async function factureerAlleActie() {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const orders = await listFactureerbareOrders();
   let aantal = 0;
   for (const o of orders) {
@@ -27,6 +29,7 @@ export async function factureerAlleActie() {
 
 export async function legeFactuur(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const organisatieId = String(formData.get('organisatie_id') ?? '').trim();
   if (!organisatieId) redirect('/dashboard/facturen');
   const id = await maakLegeFactuur(organisatieId);
@@ -36,6 +39,7 @@ export async function legeFactuur(formData: FormData) {
 
 export async function zetBoekhouderEmailActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const email = String(formData.get('boekhouder_email') ?? '').trim();
   await zetBoekhouderEmail(email);
   await logAudit('boekhouder_email_gewijzigd', { entiteit: 'instellingen' });
@@ -44,6 +48,7 @@ export async function zetBoekhouderEmailActie(formData: FormData) {
 
 export async function markeerBetaaldActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const ids = formData.getAll('factuur_ids').map(String).filter(Boolean);
   let aantal = 0;
   for (const id of ids) {
@@ -56,6 +61,7 @@ export async function markeerBetaaldActie(formData: FormData) {
 
 export async function mailFacturenActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const ids = formData.getAll('factuur_ids').map(String).filter(Boolean);
   const r = await mailFacturenNaarBoekhouder(ids);
   if (r.ok) {

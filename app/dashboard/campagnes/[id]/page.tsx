@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
+import { kmsAdmin, dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { getCampagne, CAMPAGNE_STATUSSEN } from '@/lib/kms/campagnes';
 import { PROSPECT_STATUSSEN } from '@/lib/kms/prospecten';
 import ConfirmSubmit from '@/components/ConfirmSubmit';
@@ -33,6 +33,7 @@ const typeLabel: Record<string, string> = {
 
 export default async function CampagneDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; fout?: string; aantal?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const { id } = await params;
   const { ok, aantal } = await searchParams;
   const sb = kmsAdmin();

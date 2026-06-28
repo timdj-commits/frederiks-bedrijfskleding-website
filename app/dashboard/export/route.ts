@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { env, isLeadsDbConfigured } from '@/lib/env';
+import { eisEigenaar } from '@/lib/kms/adminClient';
 import { getLeads } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -12,6 +13,7 @@ export async function GET() {
   if (!env.dashboardPassword || auth !== env.dashboardPassword.trim()) {
     return new Response('Niet toegestaan', { status: 401 });
   }
+  await eisEigenaar();
   if (!isLeadsDbConfigured) return new Response('Niet geconfigureerd', { status: 400 });
 
   const leads = await getLeads();

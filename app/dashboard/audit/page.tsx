@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { listAudit } from '@/lib/kms/audit';
 import { formatStatus } from '@/lib/format';
 
@@ -26,6 +26,7 @@ function kortId(id: string | null): string {
 
 export default async function AuditPage() {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
 
   const regels = await listAudit(100);
 

@@ -16,6 +16,7 @@ const OK_TEKSTEN: Record<string, string> = {
 const FOUT_TEKSTEN: Record<string, string> = {
   order: 'Kon geen order maken. Koppel eerst een klant.',
   mail: 'Vul een e-mailadres in.',
+  'geen-toegang': 'Geen toegang. Dit onderdeel is alleen voor de eigenaar.',
 };
 
 function ToastInner() {

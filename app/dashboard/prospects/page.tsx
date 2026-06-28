@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { kmsAdmin, dashAuthed } from '@/lib/kms/adminClient';
+import { kmsAdmin, dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { listProspectenPaged, PROSPECT_STATUSSEN } from '@/lib/kms/prospecten';
 import NavigateSelect from '@/components/dashboard/NavigateSelect';
 import AutoSubmitSelect from '@/components/dashboard/AutoSubmitSelect';
@@ -30,6 +30,7 @@ const statusBadge: Record<string, string> = {
 
 export default async function ProspectsPage({ searchParams }: { searchParams: Promise<{ status?: string; zoek?: string; pagina?: string; sort?: string; dir?: string }> }) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const sb = kmsAdmin();
 
   if (!sb) {

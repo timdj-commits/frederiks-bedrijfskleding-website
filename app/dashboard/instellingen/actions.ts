@@ -1,6 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
-import { dashAuthed } from '@/lib/kms/adminClient';
+import { dashAuthed, eisEigenaar } from '@/lib/kms/adminClient';
 import { zetBoekhouderEmail } from '@/lib/kms/facturen';
 import { zetRetourtermijn } from '@/lib/portaal/service';
 import { zetSpaarInstellingen } from '@/lib/kms/sparen';
@@ -14,6 +14,7 @@ import { logAudit } from '@/lib/kms/audit';
 
 export async function zetBoekhouderActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const email = String(formData.get('email') ?? '').trim();
   await zetBoekhouderEmail(email);
   await logAudit('boekhouder_email_gewijzigd', { entiteit: 'instellingen' });
@@ -22,6 +23,7 @@ export async function zetBoekhouderActie(formData: FormData) {
 
 export async function zetRetourActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const dagen = Number.parseInt(String(formData.get('dagen') ?? '').trim(), 10);
   const veilig = Number.isFinite(dagen) && dagen > 0 ? dagen : 30;
   await zetRetourtermijn(veilig);
@@ -31,6 +33,7 @@ export async function zetRetourActie(formData: FormData) {
 
 export async function zetSpaarActie(formData: FormData) {
   if (!(await dashAuthed())) redirect('/dashboard');
+  await eisEigenaar();
   const actief = String(formData.get('actief') ?? '') === 'aan';
   const puntenPerEuro = Number(String(formData.get('punten_per_euro') ?? '').replace(',', '.')) || 1;
   const euroPerPunt = Number(String(formData.get('euro_per_punt') ?? '').replace(',', '.')) || 0.01;
